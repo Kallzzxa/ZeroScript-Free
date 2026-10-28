@@ -2,6 +2,23 @@
 
 All notable changes to AI2RobLox Free are documented here.
 
+## [1.5.15] - 2026-10-28
+
+### Fixed
+- **Muse: interactive work is now self-tested, and UIs are finished, like DeepSeek.**
+  DeepSeek tests itself in Play (keyboard / mouse input, console
+  check) and its UIs look finished, while Muse only told the user
+  to test and shipped a plain Frame UI. The test tools already
+  exist for every provider (user_keyboard_input, user_mouse_input,
+  character_navigation, get_console_output), so the fix is again in
+  Muse's promptExtra, not in parsing: after creating or changing
+  an interactive script, model, or UI, Muse must start Play, test
+  it with keyboard / mouse input, read the console, fix at most
+  twice, always stop Play and return to Edit mode, and report
+  honestly what passed and what failed. For UIs, Muse must use
+  UICorner, UIStroke, UIPadding, good contrast and readable text,
+  and test the buttons in Play, not just ship plain labels.
+
 ## [1.5.14] - 2026-10-28
 
 ### Fixed

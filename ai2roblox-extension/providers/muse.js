@@ -92,6 +92,18 @@
 //    1.5.14: PROMPT_EXTRA now carries that diagnosis loop for Muse
 //    (check mode, stop Play, retry once, fallback or ask - never an
 //    endless retry), explained in the user's language.
+//  - 2026-10-28 (later still): user compared DeepSeek again -
+//    DeepSeek tests itself in Play (keyboard / mouse input, console
+//    check) and its UIs look finished, while Muse only told the user
+//    to test and shipped a plain Frame UI. The tools for that test
+//    already exist for every provider (user_keyboard_input,
+//    user_mouse_input, character_navigation, get_console_output),
+//    so again the missing piece was model behaviour, not parsing.
+//    Fix in 1.5.15: PROMPT_EXTRA now carries a self-test loop
+//    (Play, test with keyboard / mouse, read console, fix at most
+//    twice, always stop Play and return to Edit) and a UI quality
+//    rule (UICorner, UIStroke, UIPadding, contrast, working buttons
+//    tested in Play, not just plain labels).
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -712,7 +724,33 @@ const AI2RobLoxProvider = (() => {
     "Tool cards: the extension already turns each command and its " +
     "result into a card in the chat, the same as on DeepSeek, so " +
     "keep your narration short and let the card carry the command " +
-    "name and result; do not paste the raw command again in prose.";
+    "name and result; do not paste the raw command again in prose. " +
+    "SELF-TEST RULE (mirrors DeepSeek: it tests itself, it does not " +
+    "just tell the user to test): after you create or change a " +
+    "script, model, or UI that is meant to be interactive, test it " +
+    "yourself in Studio instead of only telling the user to test it. " +
+    "For a static model, search_game_tree verification is enough. " +
+    "For anything interactive, do this loop: 1) start Play with " +
+    "start_stop_play is_start true, 2) test it with the tools made " +
+    "for Play: user_keyboard_input and user_mouse_input need " +
+    "datamodel_type Client and a running game, character_navigation " +
+    "moves the character, and execute_luau with a Server or Client " +
+    "marker can check live state, 3) read get_console_output for " +
+    "errors, and inspect the result with search_game_tree or " +
+    "inspect_instance, 4) fix what failed in Edit mode, then test " +
+    "again, at most two fix-and-retest cycles, 5) always stop Play " +
+    "with start_stop_play is_start false and return to Edit mode " +
+    "before you finish, and report honestly what passed, what " +
+    "failed, and what you could not test. Never leave the place " +
+    "stuck in Play mode. " +
+    "UI QUALITY RULE: when you make a UI, do not ship a bare Frame " +
+    "with plain TextLabels only. Make it look finished: rounded " +
+    "corners with UICorner, a subtle UIStroke, UIPadding, good " +
+    "contrast and readable TextScaled text, a clear layout with " +
+    "space between elements, and a visible state (speed, status, " +
+    "controls) plus working buttons, not just labels. Test the " +
+    "buttons with user_mouse_input in Play mode, not just by " +
+    "reading the code.";
 
   return {
     id: "muse",
@@ -736,8 +774,9 @@ const AI2RobLoxProvider = (() => {
       "before generation. Named people need a confirmed description or " +
       "a reference photo, and likeness is never guaranteed. Generate " +
       "failures are diagnosed like DeepSeek: Play mode is stopped " +
-      "first, transient fetch errors get one retry. If turns " +
-      "are not detected, reload the page and retry.",
+      "first, transient fetch errors get one retry. Interactive " +
+      "work is self-tested in Play and UIs are made finished, not " +
+      "plain. If turns are not detected, reload the page and retry.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,
