@@ -1,14 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
-/* overlay.css - ZeroScript Free in-page UI. Scoped under #zs-root / .zs-* */
+/* overlay.css - AI2RobLox Free in-page UI. Scoped under #ai2roblox-root / .ai2roblox-* */
 
-#zs-root {
+#ai2roblox-root {
   position: fixed;
   z-index: 2147483600;
   font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ── status bar (anchored above the composer; left/top/width set inline) ──── */
-#zs-bar {
+#ai2roblox-bar {
   position: fixed;
   display: flex;
   align-items: center;
@@ -29,9 +29,9 @@
    pushes content down instead of floating. Two looks:
    • default (mounted ABOVE the input box, e.g. Gemini) → a subtle surface card so
      it reads as a panel and doesn't float in empty space;
-   • .zs-bar-inside (mounted INSIDE the input box, e.g. DeepSeek) → transparent
+   • .ai2roblox-bar-inside (mounted INSIDE the input box, e.g. DeepSeek) → transparent
      with just a divider, so it blends into the composer surface it lives in. */
-#zs-bar.zs-bar-inline {
+#ai2roblox-bar.ai2roblox-bar-inline {
   position: static;
   width: 100%;
   left: auto; top: auto;
@@ -44,11 +44,11 @@
   backdrop-filter: none;
   padding: 7px 12px;
 }
-html.zs-light #zs-bar.zs-bar-inline {
+html.ai2roblox-light #ai2roblox-bar.ai2roblox-bar-inline {
   background: rgba(0, 0, 0, 0.04);
   border-color: rgba(0, 0, 0, 0.10);
 }
-#zs-bar.zs-bar-inline.zs-bar-inside {
+#ai2roblox-bar.ai2roblox-bar-inline.ai2roblox-bar-inside {
   margin: 0 0 6px;
   background: transparent;
   border: none;
@@ -58,7 +58,7 @@ html.zs-light #zs-bar.zs-bar-inline {
      up with the input and the right-side buttons clear the rounded corner. */
   padding: 4px 16px 10px;
 }
-html.zs-light #zs-bar.zs-bar-inline.zs-bar-inside {
+html.ai2roblox-light #ai2roblox-bar.ai2roblox-bar-inline.ai2roblox-bar-inside {
   background: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -67,8 +67,8 @@ html.zs-light #zs-bar.zs-bar-inline.zs-bar-inside {
    framework-managed composer DOM, e.g. Kimi's Vue subtree) but the core sizes
    and positions it to hug the composer's top edge at full width, with reserved
    padding on the composer so it reads as in-flow. Transparent like the
-   .zs-bar-inside look, so it blends into the composer surface. */
-#zs-bar.zs-bar-anchored {
+   .ai2roblox-bar-inside look, so it blends into the composer surface. */
+#ai2roblox-bar.ai2roblox-bar-anchored {
   background: transparent;
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -80,7 +80,7 @@ html.zs-light #zs-bar.zs-bar-inline.zs-bar-inside {
      (bar height + gap) tracks this automatically. */
   padding: 9px 16px;
 }
-html.zs-light #zs-bar.zs-bar-anchored {
+html.ai2roblox-light #ai2roblox-bar.ai2roblox-bar-anchored {
   background: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -88,12 +88,12 @@ html.zs-light #zs-bar.zs-bar-anchored {
 /* Per-site tuning. On Gemini the default system stack looked foreign next to
    Google Sans, and weight 700 read heavy - match the host for a native feel.
    DeepSeek is left exactly as-is (it already blends well). */
-#zs-bar.zs-prov-gemini {
+#ai2roblox-bar.ai2roblox-prov-gemini {
   font-family: "Google Sans Text", "Google Sans", Roboto, ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
 }
-#zs-bar.zs-prov-gemini #zs-brand,
-#zs-bar.zs-prov-gemini #zs-action,
-#zs-bar.zs-prov-gemini #zs-state b { font-weight: 500; }
+#ai2roblox-bar.ai2roblox-prov-gemini #ai2roblox-brand,
+#ai2roblox-bar.ai2roblox-prov-gemini #ai2roblox-action,
+#ai2roblox-bar.ai2roblox-prov-gemini #ai2roblox-state b { font-weight: 500; }
 
 /* ChatGPT's composer surface is a CSS grid. Its template was, until 2026-09:
      "header header header" / "leading primary trailing" / ". footer ."
@@ -110,10 +110,10 @@ html.zs-light #zs-bar.zs-bar-anchored {
    The bottom margin keeps it off the input row; the negative side margins let
    it reach the card's padding edges so it reads as part of the composer, like
    on DeepSeek. */
-/* Selector carries .zs-bar-inline.zs-bar-inside on purpose: the generic
-   `#zs-bar.zs-bar-inline.zs-bar-inside` rule above is more specific than a plain
-   `#zs-bar.zs-prov-chatgpt`, so the margin below was silently losing to it. */
-#zs-bar.zs-bar-inline.zs-bar-inside.zs-prov-chatgpt {
+/* Selector carries .ai2roblox-bar-inline.ai2roblox-bar-inside on purpose: the generic
+   `#ai2roblox-bar.ai2roblox-bar-inline.ai2roblox-bar-inside` rule above is more specific than a plain
+   `#ai2roblox-bar.ai2roblox-prov-chatgpt`, so the margin below was silently losing to it. */
+#ai2roblox-bar.ai2roblox-bar-inline.ai2roblox-bar-inside.ai2roblox-prov-chatgpt {
   grid-area: eyebrow;
   /* The bottom margin has to clear more than it looks: the input row's wrapper
      carries -my-2.5, so its painted box starts 10px ABOVE its grid row. At 6px
@@ -140,21 +140,21 @@ html.zs-light #zs-bar.zs-bar-anchored {
    into - and was sliced by - the card's bottom edge ("Agent is working…"). Give
    the card enough bottom padding to clear that overhang, only while our bar is
    inside it. */
-[class*="composer-surface"]:has(> #zs-bar.zs-prov-chatgpt) { padding-bottom: 12px; }
+[class*="composer-surface"]:has(> #ai2roblox-bar.ai2roblox-prov-chatgpt) { padding-bottom: 12px; }
 
 /* Meta AI's composer card has a large corner radius (rounded-32 = 32px), so the
    full-width anchored bar's left/right ends run under the curve - the brand and
    the Discord/switch/support icons crowd the rounding. Inset the content by ~the
    radius so both edges clear the corners cleanly. */
-#zs-bar.zs-bar-anchored.zs-prov-meta { padding-left: 30px; padding-right: 30px; }
+#ai2roblox-bar.ai2roblox-bar-anchored.ai2roblox-prov-meta { padding-left: 30px; padding-right: 30px; }
 
-#zs-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; cursor: help; }
-#zs-dot.on { background: #34d399; box-shadow: 0 0 8px #34d399; }
-#zs-dot.warn { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
-#zs-dot.off { background: #6b7280; }
+#ai2roblox-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; cursor: help; }
+#ai2roblox-dot.on { background: #34d399; box-shadow: 0 0 8px #34d399; }
+#ai2roblox-dot.warn { background: #fbbf24; box-shadow: 0 0 8px #fbbf24; }
+#ai2roblox-dot.off { background: #6b7280; }
 
-#zs-brand { font-weight: 700; letter-spacing: 0.2px; flex: none; font-size: 12.5px; }
-.zs-free {
+#ai2roblox-brand { font-weight: 700; letter-spacing: 0.2px; flex: none; font-size: 12.5px; }
+.ai2roblox-free {
   font-size: 9.5px; font-weight: 500; letter-spacing: 0.2px;
   color: rgba(255, 255, 255, 0.55); background: none; border: none;
   padding: 0; margin-left: 3px; vertical-align: middle;
@@ -164,7 +164,7 @@ html.zs-light #zs-bar.zs-bar-anchored {
    just above the bar (positioned by placeUnstable each frame) instead of sitting
    inside it - so it never crowds the row on narrow composers. Click / hover for
    the full explanation (toast + title tooltip). */
-#zs-unstable {
+#ai2roblox-unstable {
   position: fixed; z-index: 2147483601;
   display: inline-flex; align-items: center; cursor: pointer;
   font-size: 10px; font-weight: 700; letter-spacing: 0.3px; white-space: nowrap;
@@ -174,40 +174,40 @@ html.zs-light #zs-bar.zs-bar-anchored {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   transition: background 0.14s ease;
 }
-#zs-unstable:hover { background: rgba(44, 37, 16, 0.98); }
-html.zs-light #zs-unstable {
+#ai2roblox-unstable:hover { background: rgba(44, 37, 16, 0.98); }
+html.ai2roblox-light #ai2roblox-unstable {
   color: #92610a; background: rgba(255, 251, 240, 0.98);
   border-color: rgba(180, 130, 10, 0.45);
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
 }
 
 /* state line: takes the slack, single line, ellipsis if it can't fit */
-#zs-state {
+#ai2roblox-state {
   flex: 1; min-width: 0;
   display: flex; align-items: center; gap: 6px;
   font-size: 11.5px; line-height: 1.3; opacity: 0.85;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.zs-state-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-#zs-state b { font-weight: 700; opacity: 1; color: #c7d2fe; }
-#zs-state.zs-state-warn { opacity: 1; color: #fca5a5; }
-#zs-state.zs-state-warn b { color: #fecaca; }
-#zs-bar.tone-active #zs-state b { color: #6ee7b7; }
+.ai2roblox-state-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#ai2roblox-state b { font-weight: 700; opacity: 1; color: #c7d2fe; }
+#ai2roblox-state.ai2roblox-state-warn { opacity: 1; color: #fca5a5; }
+#ai2roblox-state.ai2roblox-state-warn b { color: #fecaca; }
+#ai2roblox-bar.tone-active #ai2roblox-state b { color: #6ee7b7; }
 
 /* live + idle dots inside the state line */
-.zs-live-dot {
+.ai2roblox-live-dot {
   width: 8px; height: 8px; border-radius: 50%; background: #34d399; flex: none;
   box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
-  animation: zs-live 1.8s ease-out infinite;
+  animation: ai2roblox-live 1.8s ease-out infinite;
 }
-@keyframes zs-live {
+@keyframes ai2roblox-live {
   0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
   100% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
 }
-.zs-live-dot.idle { background: #9ca3af; animation: none; box-shadow: none; }
+.ai2roblox-live-dot.idle { background: #9ca3af; animation: none; box-shadow: none; }
 
 /* primary action button (Start) */
-#zs-action {
+#ai2roblox-action {
   flex: none;
   padding: 7px 13px;
   border-radius: 9px; border: 1px solid transparent;
@@ -220,45 +220,45 @@ html.zs-light #zs-unstable {
      arrow, which requests the same thing on browsers without this property. */
   font-variant-emoji: text;
 }
-#zs-action[data-kind="start"] {
+#ai2roblox-action[data-kind="start"] {
   background: linear-gradient(135deg, #6366f1, #818cf8); color: #fff; border-color: transparent;
   box-shadow: 0 2px 12px rgba(99, 102, 241, 0.45);
 }
-#zs-action[data-kind="start"]:hover { filter: brightness(1.08); }
+#ai2roblox-action[data-kind="start"]:hover { filter: brightness(1.08); }
 /* Degraded start: Roblox is down but another MCP server is live. Amber to signal
    "startable, but not the full setup" - distinct from the blue full-ready start. */
-#zs-action[data-kind="start-degraded"] {
+#ai2roblox-action[data-kind="start-degraded"] {
   background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff; border-color: transparent;
   box-shadow: 0 2px 12px rgba(217, 119, 6, 0.45);
 }
-#zs-action[data-kind="start-degraded"]:hover { filter: brightness(1.08); }
-#zs-action:disabled {
+#ai2roblox-action[data-kind="start-degraded"]:hover { filter: brightness(1.08); }
+#ai2roblox-action:disabled {
   background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.45);
   border-color: rgba(255, 255, 255, 0.10); box-shadow: none; cursor: not-allowed;
 }
 /* attention flash when the user sends on a fresh chat without starting */
-#zs-action.zs-flash { animation: zs-flash 0.4s ease-in-out 3; }
-@keyframes zs-flash {
+#ai2roblox-action.ai2roblox-flash { animation: ai2roblox-flash 0.4s ease-in-out 3; }
+@keyframes ai2roblox-flash {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.06); box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.6); }
 }
 
 /* stop button (replaces the action button while the agent is busy) */
-#zs-stop {
+#ai2roblox-stop {
   flex: none; padding: 7px 13px;
   background: #ef4444; color: #fff; border: 0; border-radius: 9px;
   font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
-#zs-stop:hover { background: #dc2626; }
+#ai2roblox-stop:hover { background: #dc2626; }
 /* Winding-down state: the loop is finishing its in-flight step after a Stop
    click. Dimmed + not-allowed so it reads as "registered, please wait". */
-#zs-stop[data-state="stopping"] {
+#ai2roblox-stop[data-state="stopping"] {
   background: #b45309; cursor: progress; opacity: 0.85;
 }
-#zs-stop[data-state="stopping"]:hover { background: #b45309; }
+#ai2roblox-stop[data-state="stopping"]:hover { background: #b45309; }
 
 /* bar controls: one neutral icon-button family (Discord, support, switch) */
-#zs-discord, #zs-support {
+#ai2roblox-discord, #ai2roblox-support {
   flex: none; width: 28px; height: 28px; padding: 0;
   display: flex; align-items: center; justify-content: center;
   background: rgba(255, 255, 255, 0.06); color: #b8b8bf;
@@ -266,10 +266,10 @@ html.zs-light #zs-unstable {
   cursor: pointer; text-decoration: none;
   transition: background 0.14s ease, color 0.14s ease;
 }
-#zs-discord:hover, #zs-support:hover { background: rgba(255, 255, 255, 0.11); color: #ededf0; }
+#ai2roblox-discord:hover, #ai2roblox-support:hover { background: rgba(255, 255, 255, 0.11); color: #ededf0; }
 
 /* model switcher: names the current AI and opens the panel at Switch AI */
-#zs-switch {
+#ai2roblox-switch {
   flex: none; display: flex; align-items: center; gap: 5px;
   height: 28px; padding: 0 9px;
   background: rgba(255, 255, 255, 0.06); color: #d0d0d6;
@@ -277,11 +277,11 @@ html.zs-light #zs-unstable {
   font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
   transition: background 0.14s ease;
 }
-#zs-switch:hover { background: rgba(255, 255, 255, 0.11); }
-#zs-switch svg { opacity: 0.55; }
+#ai2roblox-switch:hover { background: rgba(255, 255, 255, 0.11); }
+#ai2roblox-switch svg { opacity: 0.55; }
 
 /* ── the "more" menu popover (right/bottom set inline) ────────────────────── */
-#zs-menu {
+#ai2roblox-menu {
   position: fixed;
   box-sizing: border-box;
   width: 274px; overflow-y: auto;
@@ -291,85 +291,85 @@ html.zs-light #zs-unstable {
   border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
   font-size: 12px;
-  animation: zs-pop 0.16s ease-out;
+  animation: ai2roblox-pop 0.16s ease-out;
 }
-@keyframes zs-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ai2roblox-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 /* discreet dark scrollbar (default white one looks out of place) */
-#zs-menu { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.22) transparent; }
-#zs-menu::-webkit-scrollbar { width: 8px; }
-#zs-menu::-webkit-scrollbar-track { background: transparent; }
-#zs-menu::-webkit-scrollbar-thumb {
+#ai2roblox-menu { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.22) transparent; }
+#ai2roblox-menu::-webkit-scrollbar { width: 8px; }
+#ai2roblox-menu::-webkit-scrollbar-track { background: transparent; }
+#ai2roblox-menu::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.18); border-radius: 8px;
   border: 2px solid transparent; background-clip: padding-box;
 }
-#zs-menu::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); background-clip: padding-box; }
-html.zs-light #zs-menu { scrollbar-color: rgba(0,0,0,0.25) transparent; }
-html.zs-light #zs-menu::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); background-clip: padding-box; }
+#ai2roblox-menu::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.30); background-clip: padding-box; }
+html.ai2roblox-light #ai2roblox-menu { scrollbar-color: rgba(0,0,0,0.25) transparent; }
+html.ai2roblox-light #ai2roblox-menu::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); background-clip: padding-box; }
 /* header strip: quiet product line, no coloured chips */
-.zs-menu-head {
+.ai2roblox-menu-head {
   display: flex; align-items: baseline; gap: 7px;
   padding: 12px 14px 11px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
-.zs-menu-logo { font-weight: 700; font-size: 13px; letter-spacing: -0.1px; color: #f4f4f6; }
-.zs-menu-tag { font-size: 10.5px; font-weight: 500; color: #7a7a82; }
+.ai2roblox-menu-logo { font-weight: 700; font-size: 13px; letter-spacing: -0.1px; color: #f4f4f6; }
+.ai2roblox-menu-tag { font-size: 10.5px; font-weight: 500; color: #7a7a82; }
 
-.zs-menu-sec { padding: 12px 14px; }
-.zs-menu-sec + .zs-menu-sec { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.ai2roblox-menu-sec { padding: 12px 14px; }
+.ai2roblox-menu-sec + .ai2roblox-menu-sec { border-top: 1px solid rgba(255, 255, 255, 0.06); }
 
 /* section label: small neutral caption, no colour */
-.zs-sec-label { margin-bottom: 8px; }
-.zs-sec-label span {
+.ai2roblox-sec-label { margin-bottom: 8px; }
+.ai2roblox-sec-label span {
   font-size: 10.5px; font-weight: 600; letter-spacing: 0.2px; color: #82828b;
 }
-.zs-menu-note { font-size: 10.5px; color: #6b6b73; line-height: 1.45; margin: 0 0 9px; }
+.ai2roblox-menu-note { font-size: 10.5px; color: #6b6b73; line-height: 1.45; margin: 0 0 9px; }
 
 /* AI site rows: plain list, subtle surface on hover */
-.zs-site-opt {
+.ai2roblox-site-opt {
   width: 100%; box-sizing: border-box; margin: 1px 0; padding: 8px 10px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   border: 0; border-radius: 7px; background: transparent;
   color: #c8c8ce; font-size: 12.5px; font-weight: 500; cursor: pointer; text-align: left;
   transition: background 0.13s ease;
 }
-button.zs-site-opt:hover { background: rgba(255, 255, 255, 0.06); }
-.zs-site-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.zs-site-name > span:first-child { color: #ededf0; font-weight: 600; }
-.zs-site-host {
+button.ai2roblox-site-opt:hover { background: rgba(255, 255, 255, 0.06); }
+.ai2roblox-site-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ai2roblox-site-name > span:first-child { color: #ededf0; font-weight: 600; }
+.ai2roblox-site-host {
   font-size: 10px; font-weight: 400; color: #6b6b73; letter-spacing: 0.1px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.zs-site-go {
+.ai2roblox-site-go {
   flex: none; font-size: 14px; color: #6b6b73;
   opacity: 0; transform: translateX(-3px);
   transition: opacity 0.13s ease, transform 0.13s ease;
 }
-button.zs-site-opt:hover .zs-site-go { opacity: 1; transform: translateX(0); }
-.zs-site-here { cursor: default; }
-.zs-site-badge {
+button.ai2roblox-site-opt:hover .ai2roblox-site-go { opacity: 1; transform: translateX(0); }
+.ai2roblox-site-here { cursor: default; }
+.ai2roblox-site-badge {
   flex: none; font-size: 10px; font-weight: 500; color: #7a7a82;
   border: 1px solid rgba(255, 255, 255, 0.12); padding: 1px 7px; border-radius: 5px;
 }
 
-#zs-set-text {
+#ai2roblox-set-text {
   width: 100%; box-sizing: border-box; resize: vertical; min-height: 58px;
   background: rgba(255, 255, 255, 0.04); color: #e5e5e8;
   border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
   padding: 8px 10px; font-size: 12px; font-family: inherit; line-height: 1.45;
 }
-#zs-set-text:focus { outline: none; border-color: rgba(255, 255, 255, 0.28); }
-.zs-set-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-#zs-set-save, #zs-mcp-add {
+#ai2roblox-set-text:focus { outline: none; border-color: rgba(255, 255, 255, 0.28); }
+.ai2roblox-set-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+#ai2roblox-set-save, #ai2roblox-mcp-add {
   background: rgba(255, 255, 255, 0.09); color: #ededf0;
   border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
   padding: 6px 15px; font-size: 12px; font-weight: 600; cursor: pointer;
   transition: background 0.13s ease;
 }
-#zs-set-save:hover, #zs-mcp-add:hover { background: rgba(255, 255, 255, 0.15); }
-#zs-set-status, #zs-mcp-status { font-size: 11px; color: #8a8a92; font-weight: 500; }
+#ai2roblox-set-save:hover, #ai2roblox-mcp-add:hover { background: rgba(255, 255, 255, 0.15); }
+#ai2roblox-set-status, #ai2roblox-mcp-status { font-size: 11px; color: #8a8a92; font-weight: 500; }
 
 /* support actions: neutral rows, differentiated by the aside text, not colour */
-.zs-tip-opt {
+.ai2roblox-tip-opt {
   width: 100%; margin: 5px 0; padding: 9px 11px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   background: rgba(255, 255, 255, 0.05);
@@ -377,69 +377,69 @@ button.zs-site-opt:hover .zs-site-go { opacity: 1; transform: translateX(0); }
   color: #e4e4e8; font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: left;
   transition: background 0.13s ease;
 }
-.zs-tip-opt:hover { background: rgba(255, 255, 255, 0.09); }
-.zs-tip-sub { font-size: 10px; font-weight: 400; color: #7a7a82; white-space: nowrap; }
-.zs-rbx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.zs-tip-rbx {
+.ai2roblox-tip-opt:hover { background: rgba(255, 255, 255, 0.09); }
+.ai2roblox-tip-sub { font-size: 10px; font-weight: 400; color: #7a7a82; white-space: nowrap; }
+.ai2roblox-rbx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ai2roblox-tip-rbx {
   justify-content: center; gap: 3px; margin: 0; padding: 8px 6px;
   font-size: 12px; font-weight: 500; color: #c8c8ce;
 }
-.zs-rbx-cur { color: #7a7a82; font-weight: 400; }
-.zs-tip-sep {
+.ai2roblox-rbx-cur { color: #7a7a82; font-weight: 400; }
+.ai2roblox-tip-sep {
   font-size: 10px; color: #6b6b73; margin: 11px 0 8px; text-align: center;
 }
 
 /* ── custom MCP servers list (add-your-own, same shell as Custom prompt) ── */
-.zs-mcp-item {
+.ai2roblox-mcp-item {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 10px; margin: 0 0 5px;
   background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 7px;
 }
-.zs-mcp-health {
+.ai2roblox-mcp-health {
   flex: none; width: 7px; height: 7px; border-radius: 50%; background: #6b7280;
 }
-.zs-mcp-health-on { background: #34d399; box-shadow: 0 0 5px rgba(52, 211, 153, 0.5); }
-.zs-mcp-health-off { background: #f87171; }
-.zs-mcp-health-unknown { background: #6b7280; }
+.ai2roblox-mcp-health-on { background: #34d399; box-shadow: 0 0 5px rgba(52, 211, 153, 0.5); }
+.ai2roblox-mcp-health-off { background: #f87171; }
+.ai2roblox-mcp-health-unknown { background: #6b7280; }
 /* Roblox: always first, greyed out - no health dot (own status lives in the
-   main ZeroScript dot) and no remove button (protected bridge-side too). */
-.zs-mcp-item-primary { opacity: 0.55; background: rgba(255, 255, 255, 0.02); }
-.zs-mcp-item-primary .zs-mcp-name { font-weight: 500; }
-.zs-mcp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.zs-mcp-sep { height: 1px; background: rgba(255, 255, 255, 0.07); margin: 4px 0 10px; }
-.zs-mcp-name { font-size: 12px; font-weight: 600; color: #e5e5e8; }
-.zs-mcp-url {
+   main AI2RobLox dot) and no remove button (protected bridge-side too). */
+.ai2roblox-mcp-item-primary { opacity: 0.55; background: rgba(255, 255, 255, 0.02); }
+.ai2roblox-mcp-item-primary .ai2roblox-mcp-name { font-weight: 500; }
+.ai2roblox-mcp-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ai2roblox-mcp-sep { height: 1px; background: rgba(255, 255, 255, 0.07); margin: 4px 0 10px; }
+.ai2roblox-mcp-name { font-size: 12px; font-weight: 600; color: #e5e5e8; }
+.ai2roblox-mcp-url {
   font-size: 10px; color: #6b6b73; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.zs-mcp-remove {
+.ai2roblox-mcp-remove {
   flex: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
   background: transparent; border: 0; border-radius: 5px; color: #7a7a82; cursor: pointer; font-size: 13px;
   transition: background 0.13s ease, color 0.13s ease;
 }
-.zs-mcp-remove:hover { background: rgba(255, 255, 255, 0.08); color: #e5e5e8; }
-.zs-mcp-field {
+.ai2roblox-mcp-remove:hover { background: rgba(255, 255, 255, 0.08); color: #e5e5e8; }
+.ai2roblox-mcp-field {
   width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, 0.04); color: #e5e5e8;
   border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
   padding: 7px 9px; font-size: 12px; font-family: inherit; margin-bottom: 6px;
 }
-.zs-mcp-field:focus { outline: none; border-color: rgba(255, 255, 255, 0.28); }
+.ai2roblox-mcp-field:focus { outline: none; border-color: rgba(255, 255, 255, 0.28); }
 
-/* small inline spinner shown next to #zs-mcp-add while the bridge restarts */
-.zs-mcp-spin-row { display: inline-flex; align-items: center; gap: 6px; }
-.zs-mcp-spin {
+/* small inline spinner shown next to #ai2roblox-mcp-add while the bridge restarts */
+.ai2roblox-mcp-spin-row { display: inline-flex; align-items: center; gap: 6px; }
+.ai2roblox-mcp-spin {
   width: 11px; height: 11px; flex: none; border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2); border-top-color: #b8b8c0;
-  animation: zs-mcp-spin-rotate 0.7s linear infinite;
+  animation: ai2roblox-mcp-spin-rotate 0.7s linear infinite;
 }
-@keyframes zs-mcp-spin-rotate { to { transform: rotate(360deg); } }
+@keyframes ai2roblox-mcp-spin-rotate { to { transform: rotate(360deg); } }
 /* ── composer mode enforcement (force Expert / DeepThink etc.) ────────────── */
-.zs-hide-el { display: none !important; }
+.ai2roblox-hide-el { display: none !important; }
 
 /* ── input cover: fully hides the text the extension types + sends ──
    background colour is set inline at runtime to match the input box,
    so the masked input simply looks empty. */
-#zs-input-cover {
+#ai2roblox-input-cover {
   position: fixed; z-index: 2147483500;
   display: flex; align-items: center; gap: 8px;
   box-sizing: border-box; padding-left: 16px;
@@ -466,15 +466,15 @@ button.zs-site-opt:hover .zs-site-go { opacity: 1; transform: translateX(0); }
    colour rgba(0,0,0,0) to rgb(255,255,255) and max-height 140px to none the
    instant it was locked. So the mask and the height cap were inert for the whole
    time the input was locked - precisely when they are needed. */
-textarea.zs-typing,
-div[contenteditable].zs-typing,
-div[contenteditable].zs-typing * { color: transparent !important; }
-textarea.zs-typing,
-div[contenteditable].zs-typing { caret-color: transparent !important; }
+textarea.ai2roblox-typing,
+div[contenteditable].ai2roblox-typing,
+div[contenteditable].ai2roblox-typing * { color: transparent !important; }
+textarea.ai2roblox-typing,
+div[contenteditable].ai2roblox-typing { caret-color: transparent !important; }
 
 /* Keep the composer from ballooning while the extension injects the (large)
    system prompt or a big tool output. The typed text is transparent and hidden
-   under #zs-input-cover anyway, so there is nothing to see - but without a cap
+   under #ai2roblox-input-cover anyway, so there is nothing to see - but without a cap
    the editor grows to fit every line (e.g. Kimi's inner .chat-input-editor hit
    ~1500px), which then makes the cover (sized to the editor rect) a giant white
    slab over the page, and on composers with no clipping ancestor (DeepSeek's
@@ -482,80 +482,80 @@ div[contenteditable].zs-typing { caret-color: transparent !important; }
    only affects DISPLAY; the full value/content is intact and still sent. The
    class is present only during agent injection, never while the user types, so
    this never clips real typing. */
-textarea.zs-typing,
-div[contenteditable].zs-typing {
+textarea.ai2roblox-typing,
+div[contenteditable].ai2roblox-typing {
   max-height: 140px !important;
   overflow-y: hidden !important;
 }
 
 /* ── spinner element ───────────────────────────────────────── */
-.zs-spin {
+.ai2roblox-spin {
   width: 12px; height: 12px; flex: none; display: inline-block;
   border: 2px solid rgba(255, 255, 255, 0.18);
   border-top-color: #c8c8ce;
   border-radius: 50%;
-  animation: zs-rot 0.7s linear infinite;
+  animation: ai2roblox-rot 0.7s linear infinite;
 }
-.zs-spin.big { width: 26px; height: 26px; border-width: 3px; }
-@keyframes zs-rot { to { transform: rotate(360deg); } }
+.ai2roblox-spin.big { width: 26px; height: 26px; border-width: 3px; }
+@keyframes ai2roblox-rot { to { transform: rotate(360deg); } }
 
 /* ── tool cards (replace tool JSON / sys prompt / results) ──────── */
-.zs-hidden > *:not(.zs-chip) { display: none !important; }
+.ai2roblox-hidden > *:not(.ai2roblox-chip) { display: none !important; }
 /* hide the code block / paragraph(s) containing the raw tool call */
-.zs-tool-hide { display: none !important; }
+.ai2roblox-tool-hide { display: none !important; }
 /* Gemini: Angular recreates the <code-block> elements inside a reply (once at
    the end-of-stream markdown settle, once again when the next turn is sent),
-   wiping any per-element .zs-tool-hide class - the raw command flashes until
+   wiping any per-element .ai2roblox-tool-hide class - the raw command flashes until
    the next sweep. <message-content> itself keeps its identity through those
    re-renders (validated live, 2026-06), so the provider marks IT with
-   .zs-cmd-mask and this rule keeps every recreated code-block hidden with no
+   .ai2roblox-cmd-mask and this rule keeps every recreated code-block hidden with no
    flash. Inert on DeepSeek (no such elements). */
-message-content.zs-cmd-mask code-block { display: none !important; }
+message-content.ai2roblox-cmd-mask code-block { display: none !important; }
 /* ChatGPT (React): React re-creates the <pre> code blocks inside a reply on
-   every token, wiping any per-element .zs-tool-hide class. The .markdown
-   container keeps its identity, so the provider marks IT with .zs-cmd-mask and
+   every token, wiping any per-element .ai2roblox-tool-hide class. The .markdown
+   container keeps its identity, so the provider marks IT with .ai2roblox-cmd-mask and
    this rule keeps every recreated <pre> hidden with no flash. Inert elsewhere. */
-.markdown.zs-cmd-mask pre { display: none !important; }
+.markdown.ai2roblox-cmd-mask pre { display: none !important; }
 /* ChatGPT, UNFENCED command block: when the model writes ###LUA###…###END_LUA###
    as plain prose instead of a fenced block, the renderer splits it into dozens of
    sibling <p>/<pre> nodes (seen live 2026-08: 68 of them for a 208-line payload).
    The rule above only re-hides recreated <pre>, so the <p> half of that range
    would flash on every token. The provider adds this class only when the range
    covers the whole reply, i.e. the message IS the command. */
-.markdown.zs-cmd-mask-all > *:not(.zs-chip) { display: none !important; }
+.markdown.ai2roblox-cmd-mask-all > *:not(.ai2roblox-chip) { display: none !important; }
 /* GLM / Z.ai (Svelte): the reply's markdown subtree is recreated on stream
-   updates and on the next send, wiping any per-element .zs-tool-hide class. The
+   updates and on the next send, wiping any per-element .ai2roblox-tool-hide class. The
    reply root (.chat-assistant) keeps its identity, so the provider marks IT with
-   .zs-cmd-mask and this rule keeps every recreated code-block wrapper (a
+   .ai2roblox-cmd-mask and this rule keeps every recreated code-block wrapper (a
    rounded-xl box carrying a copy-code button) hidden with no flash. Inert
    elsewhere. */
-.chat-assistant.zs-cmd-mask div[class*="rounded-xl"]:has(.copy-code-button) { display: none !important; }
+.chat-assistant.ai2roblox-cmd-mask div[class*="rounded-xl"]:has(.copy-code-button) { display: none !important; }
 /* Kimi (Vue): the reply's markdown subtree is recreated on stream updates,
-   wiping any per-element .zs-tool-hide class. The assistant turn
+   wiping any per-element .ai2roblox-tool-hide class. The assistant turn
    (.segment-assistant) keeps its identity, so the provider marks IT with
-   .zs-cmd-mask and this rule keeps every recreated fenced-code wrapper
+   .ai2roblox-cmd-mask and this rule keeps every recreated fenced-code wrapper
    (.segment-code) hidden with no flash. Inert elsewhere. */
-.segment-assistant.zs-cmd-mask .segment-code { display: none !important; }
+.segment-assistant.ai2roblox-cmd-mask .segment-code { display: none !important; }
 /* Qwen (React + Ant Design): the reply markdown subtree is recreated on stream
    updates. The assistant turn (.qwen-chat-message-assistant) keeps its identity,
-   so the provider marks IT with .zs-cmd-mask and this rule re-hides recreated
+   so the provider marks IT with .ai2roblox-cmd-mask and this rule re-hides recreated
    Monaco code blocks (pre.qwen-markdown-code) with no flash. Inert elsewhere. */
-.qwen-chat-message-assistant.zs-cmd-mask pre.qwen-markdown-code { display: none !important; }
+.qwen-chat-message-assistant.ai2roblox-cmd-mask pre.qwen-markdown-code { display: none !important; }
 /* Arena (arena.ai, React): React recreates the reply's rendered code subtree on
-   stream settle and on the next send, wiping any per-element .zs-tool-hide class.
+   stream settle and on the next send, wiping any per-element .ai2roblox-tool-hide class.
    The assistant turn <div> keeps its identity (the chip is anchored at item
-   level), so the provider marks IT with .zs-cmd-mask and this rule keeps every
+   level), so the provider marks IT with .ai2roblox-cmd-mask and this rule keeps every
    recreated fenced-code wrapper (a .not-prose box holding a <pre>) hidden with no
    flash. Inert elsewhere. */
-.zs-cmd-mask div.not-prose:has(pre) { display: none !important; }
+.ai2roblox-cmd-mask div.not-prose:has(pre) { display: none !important; }
 
 /* Meta AI (www.meta.ai, React): React recreates the reply's rendered code subtree
-   on stream settle and on the next send, wiping any per-element .zs-tool-hide
+   on stream settle and on the next send, wiping any per-element .ai2roblox-tool-hide
    class. The assistant-message body keeps its identity (the chip is anchored at
-   item level), so the provider marks IT with .zs-cmd-mask and this rule keeps
+   item level), so the provider marks IT with .ai2roblox-cmd-mask and this rule keeps
    every recreated command wrapper (the .ur-code-block that holds either the JSON
    viewer widget or a plain <pre>) hidden with no flash. Inert elsewhere. */
-.zs-cmd-mask .ur-code-block { display: none !important; }
+.ai2roblox-cmd-mask .ur-code-block { display: none !important; }
 
 /* Meta AI whole-turn chips (result / sys) alignment. A whole:true chip is pinned
    as a direct child of the TURN ROOT, but Meta's turn root is FULL width (~1608px)
@@ -566,15 +566,15 @@ message-content.zs-cmd-mask code-block { display: none !important; }
    whole chips onto the same 768px column: push the left edge in by the column's
    own centering offset and cap the width to the column. `max()` keeps it sane on
    narrow viewports where the column is full-width. */
-html.zs-site-meta .zs-hidden > .zs-chip {
+html.ai2roblox-site-meta .ai2roblox-hidden > .ai2roblox-chip {
   margin-left: max(0px, calc((100% - 768px) / 2));
   max-width: 768px;
 }
 
 /* Qwen (Ant Design) renders its model / thinking-mode select popup AND the
    composer "+" attachment menu (Upload attachment / Deep Research / Create
-   image / Web Dev / Slides / More) at z-index 1050-1150 - far below #zs-root
-   (2147483600) - so the ZeroScript bar covered the bottom of whichever menu was
+   image / Web Dev / Slides / More) at z-index 1050-1150 - far below #ai2roblox-root
+   (2147483600) - so the AI2RobLox bar covered the bottom of whichever menu was
    open (reported live: the "+" menu's "More" row and the bar's own "Tools"
    toggle drew on top of each other). Both popups are portalled to <body>, so
    raising their z-index above the bar lifts them back on top. Inert when a
@@ -584,7 +584,7 @@ html.zs-site-meta .zs-hidden > .zs-chip {
 
 /* Qwen's model list has an "Expand more models" fly-out submenu (the Qwen3.6
    family etc.) rendered as a SEPARATE body-portalled `.ant-dropdown` at z-index
-   1050 - NOT the `.qwen-select-dropdown` above - so the ZeroScript bar drew on
+   1050 - NOT the `.qwen-select-dropdown` above - so the AI2RobLox bar drew on
    top of it (reported live: the bar's "Start Roblox agent" row covered the
    Qwen3.6-Max-Preview description). Scoped with :has() to the dropdown that
    actually holds model rows, so unrelated Ant dropdowns/tooltips are untouched. */
@@ -594,8 +594,8 @@ html.zs-site-meta .zs-hidden > .zs-chip {
    Thinking / Agent / Swarm), the composer "+" toolkit menu (Add files &
    photos / Presets / Plugins / Skills / Web search), and that same button's
    OWN hover tooltip ("Add files & photos…") - into a
-   .v-binder-follower-container at z-index ~20-2001, far below #zs-root
-   (2147483600) - so the ZeroScript bar/pill covered the open menu/tooltip
+   .v-binder-follower-container at z-index ~20-2001, far below #ai2roblox-root
+   (2147483600) - so the AI2RobLox bar/pill covered the open menu/tooltip
    (reported live: opening "+", or just hovering it, while the agent was
    working drew the "unstable" pill and composer cover through it). Lift the
    container above the bar. :has scopes this to those known popovers
@@ -616,34 +616,34 @@ html.zs-site-meta .zs-hidden > .zs-chip {
 
 /* GLM / Z.ai (bits-ui floating library) portals its composer-toolbar popovers -
    the Search / Advanced Search hover card, and similar tooltips/dropdowns - into
-   a [data-bits-floating-content-wrapper] at z-index ~9999, far below #zs-root
-   (2147483600), so the ZeroScript bar sat in front of them (the popover appeared
+   a [data-bits-floating-content-wrapper] at z-index ~9999, far below #ai2roblox-root
+   (2147483600), so the AI2RobLox bar sat in front of them (the popover appeared
    "behind" the bar on hover). The wrapper is the positioned/stacking element, so
    lifting it above the bar fixes every bits-ui popover anchored near the bar. */
 [data-bits-floating-content-wrapper] { z-index: 2147483646 !important; }
 
 /* Gemini (Angular Material) portals its composer "+" menu (Import files /
    Create image / Canvas / Deep Research…) and its other dialogs into a single
-   body-level .cdk-overlay-container at z-index 1000 - far below #zs-root
-   (2147483600) / #zs-unstable (2147483601). The ZeroScript bar and its
+   body-level .cdk-overlay-container at z-index 1000 - far below #ai2roblox-root
+   (2147483600) / #ai2roblox-unstable (2147483601). The AI2RobLox bar and its
    floating "unstable" pill sat OVER the open menu (reported live: opening "+"
    while the agent was working drew the pill straight through the menu).
-   Lift the whole overlay container above every ZeroScript surface. */
+   Lift the whole overlay container above every AI2RobLox surface. */
 .cdk-overlay-container { z-index: 2147483646 !important; }
 
 /* DeepSeek (its own "ds-" design system) portals tooltips and popovers - e.g.
    the "Think before responding…" tooltip on the DeepThink pill - into a
-   body-level .ds-floating-container at z-index 1024, far below #zs-root
-   (2147483600) and #zs-input-cover (2147483500). While the composer cover sits
+   body-level .ds-floating-container at z-index 1024, far below #ai2roblox-root
+   (2147483600) and #ai2roblox-input-cover (2147483500). While the composer cover sits
    over the input during agent activity, it visually covered the tooltip
    (reported live: hovering DeepThink while the agent was working showed the
    tooltip clipped/behind the bar). Lift every DeepSeek floating portal above
-   ZeroScript's own overlays. */
+   AI2RobLox's own overlays. */
 .ds-floating-container { z-index: 2147483646 !important; }
 
 /* Arena (Radix UI) portals its header dropdowns - the model picker and the
    conversation-mode select - into a [data-radix-popper-content-wrapper] at
-   z-index ~50, far below #zs-root (2147483600). The model list is tall enough to
+   z-index ~50, far below #ai2roblox-root (2147483600). The model list is tall enough to
    reach down into the anchored bar's band, so its lower entries sat behind the
    bar. Lift every Radix popper above the bar. (Radix DIALOGS are handled
    separately: arena.js overlayBlocking() hides the bar while one is open.) */
@@ -663,7 +663,7 @@ html.zs-site-meta .zs-hidden > .zs-chip {
    with the candidate cards' left edge instead of the turn's raw edge.
    `:not(.mx-auto)` scopes this to exactly the carousel-hosted case; every
    normal turn is untouched. */
-ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
+ol.flex-col-reverse > div.w-full:not(.mx-auto) > .ai2roblox-chip {
   max-width: 800px;
   margin-left: 1rem;
   margin-right: auto;
@@ -673,7 +673,7 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
    longer paints a colour (that rainbow was the clutter); only STATE carries a
    tint - a muted green tick when done, red when it errored. --cat drives just
    the small head icon, so it stays neutral unless a state class recolours it. */
-.zs-chip {
+.ai2roblox-chip {
   --cat: #8b8b93;
   display: block; width: fit-content; max-width: 100%;
   /* Never stretch to the container width: some sites (Meta AI) render the reply
@@ -690,42 +690,42 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
   overflow: hidden;
   transition: background 0.18s ease, border-color 0.18s ease;
 }
-.zs-chip:hover { background: rgba(255, 255, 255, 0.06); }
+.ai2roblox-chip:hover { background: rgba(255, 255, 255, 0.06); }
 
-.zs-chip-head {
+.ai2roblox-chip-head {
   display: flex; align-items: center; gap: 9px;
   padding: 8px 13px;
 }
-.zs-chip-ic {
+.ai2roblox-chip-ic {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; flex: none; color: var(--cat);
 }
-.zs-chip-ic svg { width: 16px; height: 16px; }
-.zs-chip-tx { font-weight: 600; letter-spacing: 0.1px; }
-.zs-chip-dt {
+.ai2roblox-chip-ic svg { width: 16px; height: 16px; }
+.ai2roblox-chip-tx { font-weight: 600; letter-spacing: 0.1px; }
+.ai2roblox-chip-dt {
   opacity: 0.6; font-size: 11px; margin-left: 2px; flex: 1;
   font-family: ui-monospace, "Cascadia Code", "Cascadia Mono", monospace;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.zs-chip-dt:empty { display: none; }
-.zs-chip-cv {
+.ai2roblox-chip-dt:empty { display: none; }
+.ai2roblox-chip-cv {
   display: inline-flex; flex: none; opacity: 0.45;
   transition: transform 0.2s ease;
 }
-.zs-chip-cv svg { width: 15px; height: 15px; }
-.zs-chip.open .zs-chip-cv { transform: rotate(180deg); }
+.ai2roblox-chip-cv svg { width: 15px; height: 15px; }
+.ai2roblox-chip.open .ai2roblox-chip-cv { transform: rotate(180deg); }
 
 /* expandable body: real args / output */
-.zs-chip-body {
+.ai2roblox-chip-body {
   max-height: 0; overflow: hidden;
   transition: max-height 0.22s ease;
   border-top: 1px solid transparent;
 }
-.zs-chip.open .zs-chip-body {
+.ai2roblox-chip.open .ai2roblox-chip-body {
   max-height: 460px; overflow: auto;
   border-top-color: color-mix(in srgb, var(--cat) 20%, transparent);
 }
-.zs-chip-body pre {
+.ai2roblox-chip-body pre {
   margin: 0; padding: 10px 13px;
   font-family: ui-monospace, "Cascadia Code", monospace;
   font-size: 12px; line-height: 1.5; color: #cdd2e0;
@@ -733,19 +733,19 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
 }
 
 /* state themes (override category background, keep accent stripe) */
-.zs-chip.done   { --cat: #5cbf9a; }
-.zs-chip.err    { --cat: #ef6b6b; border-color: rgba(239, 68, 68, 0.38); color: #f0b8b8; }
-.zs-chip.result { --cat: #8b8b93; color: #a8a8b0; }
-.zs-chip.sys    { --cat: #8b8b93; color: #a8a8b0; }
+.ai2roblox-chip.done   { --cat: #5cbf9a; }
+.ai2roblox-chip.err    { --cat: #ef6b6b; border-color: rgba(239, 68, 68, 0.38); color: #f0b8b8; }
+.ai2roblox-chip.result { --cat: #8b8b93; color: #a8a8b0; }
+.ai2roblox-chip.sys    { --cat: #8b8b93; color: #a8a8b0; }
 /* Orphaned command we won't execute (e.g. reload left it un-run): neutral grey,
    never a green ✓ that would imply the tool succeeded. */
-.zs-chip.idle   { --cat: #8b8b93; color: #a8a8b0; }
+.ai2roblox-chip.idle   { --cat: #8b8b93; color: #a8a8b0; }
 
 /* running shimmer, seamless: a REPEATING gradient (period = 210px) scrolled by
    exactly one period in LINEAR time, so the last frame is pixel-identical to the
    first - no visible seam or pause between cycles. background-position animates
    only the image; the base colour stays put. */
-.zs-chip.run {
+.ai2roblox-chip.run {
   background-color: rgba(255, 255, 255, 0.05);
   background-image: linear-gradient(90deg,
     transparent 0%, rgba(255, 255, 255, 0.09) 50%, transparent 100%);
@@ -754,13 +754,13 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
      tile origin doesn't shift, so the gradient no longer "teleports". */
   background-repeat: repeat;
   background-size: 210px 100%;
-  animation: zs-shimmer 1.6s linear infinite;
+  animation: ai2roblox-shimmer 1.6s linear infinite;
 }
 /* scroll by exactly one tile → last frame == first frame → seamless loop */
-@keyframes zs-shimmer { from { background-position: 0 0; } to { background-position: 210px 0; } }
+@keyframes ai2roblox-shimmer { from { background-position: 0 0; } to { background-position: 210px 0; } }
 
 /* ── toast ─────────────────────────────────────────────────── */
-.zs-toast {
+.ai2roblox-toast {
   position: fixed; right: 18px; top: 80px;
   max-width: 300px; padding: 9px 13px;
   background: rgba(30, 30, 36, 0.96); color: #e8e8ec;
@@ -768,10 +768,10 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
   font-size: 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
   opacity: 0; transform: translateY(8px); transition: all 0.25s ease;
 }
-.zs-toast.show { opacity: 1; transform: translateY(0); }
+.ai2roblox-toast.show { opacity: 1; transform: translateY(0); }
 
 /* ── banner (errors / limits) ──────────────────────────────── */
-.zs-banner {
+.ai2roblox-banner {
   position: fixed; right: 18px; top: 18px; width: 320px;
   padding: 14px 16px; border-radius: 12px;
   background: #161618; color: #ececee;
@@ -780,30 +780,30 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
   font-size: 13px; z-index: 2147483601;
 }
 /* semantic state kept, but as a thin muted stripe rather than a bright bar */
-.zs-banner.limit { border-left: 2px solid rgba(239, 68, 68, 0.55); }
-.zs-banner.warn { border-left: 2px solid rgba(251, 191, 36, 0.5); }
-.zs-banner-t { font-weight: 600; color: #f4f4f6; margin-bottom: 6px; }
-.zs-banner-m { color: #9a9aa2; line-height: 1.5; margin-bottom: 12px; }
-.zs-banner-acts { display: flex; gap: 8px; }
-.zs-banner-acts button {
+.ai2roblox-banner.limit { border-left: 2px solid rgba(239, 68, 68, 0.55); }
+.ai2roblox-banner.warn { border-left: 2px solid rgba(251, 191, 36, 0.5); }
+.ai2roblox-banner-t { font-weight: 600; color: #f4f4f6; margin-bottom: 6px; }
+.ai2roblox-banner-m { color: #9a9aa2; line-height: 1.5; margin-bottom: 12px; }
+.ai2roblox-banner-acts { display: flex; gap: 8px; }
+.ai2roblox-banner-acts button {
   flex: 1; padding: 7px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
   cursor: pointer; font-size: 12px; font-weight: 600;
   background: transparent; color: #a0a0a8; transition: background 0.13s ease;
 }
-.zs-banner-x { background: transparent; color: #a0a0a8; }
-.zs-banner-x:hover { background: rgba(255, 255, 255, 0.06); }
+.ai2roblox-banner-x { background: transparent; color: #a0a0a8; }
+.ai2roblox-banner-x:hover { background: rgba(255, 255, 255, 0.06); }
 /* Setup-tutorial link embedded in the bridge-lost banner (styled like a button,
    sits in the actions row so it never overlaps the alert). */
-.zs-banner-video {
+.ai2roblox-banner-video {
   flex: 1; padding: 7px; border-radius: 8px; font-size: 12px; font-weight: 600;
   text-align: center; text-decoration: none; box-sizing: border-box;
   background: rgba(255, 255, 255, 0.06); color: #e4e4e8;
   border: 1px solid rgba(255, 255, 255, 0.1); transition: background 0.13s ease;
 }
-.zs-banner-video:hover { background: rgba(255, 255, 255, 0.11); }
+.ai2roblox-banner-video:hover { background: rgba(255, 255, 255, 0.11); }
 
 /* ── first-time onboarding card (bridge missing; pinned top-right) ───────── */
-#zs-setup {
+#ai2roblox-setup {
   position: fixed;
   top: 18px; right: 18px;
   width: 288px;
@@ -815,69 +815,69 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
   font-size: 12px;
   z-index: 2147483600;
-  animation: zs-pop 0.2s ease-out;
+  animation: ai2roblox-pop 0.2s ease-out;
 }
-#zs-setup-head {
+#ai2roblox-setup-head {
   display: flex; align-items: baseline; gap: 7px;
   padding: 12px 15px 11px; border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
-#zs-setup-logo { font-weight: 700; font-size: 13px; letter-spacing: -0.1px; color: #f4f4f6; }
-#zs-setup-tag { font-size: 10.5px; font-weight: 500; color: #7a7a82; }
-#zs-setup-sub { color: #9a9aa2; font-size: 11.5px; line-height: 1.5; margin: 12px 15px 12px; }
+#ai2roblox-setup-logo { font-weight: 700; font-size: 13px; letter-spacing: -0.1px; color: #f4f4f6; }
+#ai2roblox-setup-tag { font-size: 10.5px; font-weight: 500; color: #7a7a82; }
+#ai2roblox-setup-sub { color: #9a9aa2; font-size: 11.5px; line-height: 1.5; margin: 12px 15px 12px; }
 /* the steps ARE a real sequence, so numbered markers earn their place here */
-#zs-setup-steps {
+#ai2roblox-setup-steps {
   list-style: none; margin: 0 15px 13px; padding: 0;
-  counter-reset: zs-step; font-size: 11.5px; line-height: 1.4;
+  counter-reset: ai2roblox-step; font-size: 11.5px; line-height: 1.4;
 }
-#zs-setup-steps li {
-  counter-increment: zs-step;
+#ai2roblox-setup-steps li {
+  counter-increment: ai2roblox-step;
   display: flex; align-items: flex-start; gap: 10px;
   padding: 6px 0; color: #cacacf;
 }
-#zs-setup-steps li + li { border-top: 1px solid rgba(255, 255, 255, 0.05); }
-#zs-setup-steps li::before {
-  content: counter(zs-step);
+#ai2roblox-setup-steps li + li { border-top: 1px solid rgba(255, 255, 255, 0.05); }
+#ai2roblox-setup-steps li::before {
+  content: counter(ai2roblox-step);
   flex: none; font-size: 11px; font-weight: 600; color: #7a7a82;
   min-width: 14px;
 }
-#zs-setup-steps code {
+#ai2roblox-setup-steps code {
   background: rgba(255, 255, 255, 0.08); padding: 0 4px; border-radius: 4px;
   font-family: ui-monospace, "Cascadia Mono", monospace; font-size: 10.5px;
 }
-.zs-setup-copy-row { display: flex; gap: 6px; margin: 0 15px 10px; }
-.zs-setup-copy-row input {
+.ai2roblox-setup-copy-row { display: flex; gap: 6px; margin: 0 15px 10px; }
+.ai2roblox-setup-copy-row input {
   flex: 1; min-width: 0;
   background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 7px; color: #b8b8bf; font-size: 10px;
   padding: 6px 8px; font-family: ui-monospace, "Cascadia Mono", monospace;
   outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-#zs-setup-copy {
+#ai2roblox-setup-copy {
   background: rgba(255, 255, 255, 0.09); color: #ededf0;
   border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 7px;
   padding: 6px 11px; font-size: 11px; font-weight: 600; cursor: pointer;
   white-space: nowrap; transition: background 0.13s ease;
 }
-#zs-setup-copy:hover { background: rgba(255, 255, 255, 0.15); }
-#zs-setup-video {
+#ai2roblox-setup-copy:hover { background: rgba(255, 255, 255, 0.15); }
+#ai2roblox-setup-video {
   display: block; margin: 0 15px 10px; padding: 8px; box-sizing: border-box;
   background: rgba(255, 255, 255, 0.05); color: #e4e4e8;
   border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;
   font-size: 12px; font-weight: 600; text-align: center; text-decoration: none;
   transition: background 0.13s ease;
 }
-#zs-setup-video:hover { background: rgba(255, 255, 255, 0.09); }
-#zs-setup-dismiss {
+#ai2roblox-setup-video:hover { background: rgba(255, 255, 255, 0.09); }
+#ai2roblox-setup-dismiss {
   display: block; width: calc(100% - 30px); margin: 0 15px; padding: 8px;
   border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);
   background: transparent; color: #a0a0a8;
   font-size: 11px; font-weight: 600; cursor: pointer;
   transition: background 0.13s ease;
 }
-#zs-setup-dismiss:hover { background: rgba(255, 255, 255, 0.06); }
+#ai2roblox-setup-dismiss:hover { background: rgba(255, 255, 255, 0.06); }
 
-/* ── capture preview popup (left-hand, ZeroScript style) ─────── */
-.zs-shot {
+/* ── capture preview popup (left-hand, AI2RobLox style) ─────── */
+.ai2roblox-shot {
   position: fixed; left: 18px; top: 72px; width: 300px; max-width: 32vw;
   background: #161618; color: #ececee;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -885,137 +885,137 @@ ol.flex-col-reverse > div.w-full:not(.mx-auto) > .zs-chip {
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
   z-index: 2147483601; overflow: hidden;
 }
-.zs-shot-hdr {
+.ai2roblox-shot-hdr {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
-.zs-shot-ttl {
+.ai2roblox-shot-ttl {
   font-size: 12px; font-weight: 600; color: #ececee;
   font-family: ui-monospace, "Cascadia Code", monospace;
 }
-.zs-shot-x {
+.ai2roblox-shot-x {
   background: none; border: none; color: #8b8b93; cursor: pointer;
   font-size: 13px; line-height: 1; padding: 2px 4px;
 }
-.zs-shot-x:hover { color: #ececee; }
-.zs-shot-body {
+.ai2roblox-shot-x:hover { color: #ececee; }
+.ai2roblox-shot-body {
   padding: 10px; max-height: 70vh; overflow-y: auto;
   display: flex; flex-direction: column; gap: 8px;
 }
-.zs-shot-img { display: block; width: 100%; height: auto; border-radius: 8px; background: rgba(0, 0, 0, 0.25); }
-html.zs-light .zs-shot { background: #ffffff; color: #1d232e; border-color: rgba(0,0,0,0.1); }
-html.zs-light .zs-shot-hdr { border-bottom-color: rgba(0,0,0,0.08); }
-html.zs-light .zs-shot-ttl { color: #1d232e; }
+.ai2roblox-shot-img { display: block; width: 100%; height: auto; border-radius: 8px; background: rgba(0, 0, 0, 0.25); }
+html.ai2roblox-light .ai2roblox-shot { background: #ffffff; color: #1d232e; border-color: rgba(0,0,0,0.1); }
+html.ai2roblox-light .ai2roblox-shot-hdr { border-bottom-color: rgba(0,0,0,0.08); }
+html.ai2roblox-light .ai2roblox-shot-ttl { color: #1d232e; }
 
 /* ══════════════════════════════════════════════════════════════
    LIGHT MODE
-   Toggled by core/main.js adding `.zs-light` to <html> when the host
+   Toggled by core/main.js adding `.ai2roblox-light` to <html> when the host
    page's effective background is light. Dark mode (the default) is
    untouched.
    ══════════════════════════════════════════════════════════════ */
 /* in-conversation tool/result/sys chips */
-html.zs-light .zs-chip {
+html.ai2roblox-light .ai2roblox-chip {
   color: #2b313d;
   background: rgba(0, 0, 0, 0.03);
   border-color: rgba(0, 0, 0, 0.12);
 }
-html.zs-light .zs-chip:hover { background: rgba(0, 0, 0, 0.055); }
-html.zs-light .zs-chip.err { border-color: rgba(220, 38, 38, 0.4); }
-html.zs-light .zs-chip-body pre { color: #2b313d; }
-html.zs-light .zs-chip-body { border-top-color: color-mix(in srgb, var(--cat) 30%, #ffffff); }
-html.zs-light .zs-chip.err { color: #7f1d1d; }
-html.zs-light .zs-chip.run {
+html.ai2roblox-light .ai2roblox-chip:hover { background: rgba(0, 0, 0, 0.055); }
+html.ai2roblox-light .ai2roblox-chip.err { border-color: rgba(220, 38, 38, 0.4); }
+html.ai2roblox-light .ai2roblox-chip-body pre { color: #2b313d; }
+html.ai2roblox-light .ai2roblox-chip-body { border-top-color: color-mix(in srgb, var(--cat) 30%, #ffffff); }
+html.ai2roblox-light .ai2roblox-chip.err { color: #7f1d1d; }
+html.ai2roblox-light .ai2roblox-chip.run {
   background-color: rgba(0, 0, 0, 0.04);
   background-image: linear-gradient(90deg,
     transparent 0%, rgba(0, 0, 0, 0.06) 50%, transparent 100%);
-  /* MUST re-declare: the light `.zs-chip` base uses the `background` shorthand
-     (resets size to auto) at a HIGHER specificity than `.zs-chip.run`, so without
+  /* MUST re-declare: the light `.ai2roblox-chip` base uses the `background` shorthand
+     (resets size to auto) at a HIGHER specificity than `.ai2roblox-chip.run`, so without
      this the tile falls back to auto (width-tied) and the sweep teleports on
      resize - the dark theme was unaffected only because its base is lower spec. */
   background-repeat: repeat;
   background-size: 210px 100%;
 }
-html.zs-light .zs-spin { border-color: rgba(0, 0, 0, 0.15); border-top-color: #6b6b73; }
+html.ai2roblox-light .ai2roblox-spin { border-color: rgba(0, 0, 0, 0.15); border-top-color: #6b6b73; }
 
 /* status bar + menu + setup card */
-html.zs-light #zs-bar {
+html.ai2roblox-light #ai2roblox-bar {
   background: rgba(255, 255, 255, 0.97);
   color: #1f2430;
   border-color: rgba(99, 102, 241, 0.32);
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.16);
 }
-html.zs-light #zs-brand { color: #1f2430; }
-html.zs-light .zs-free { color: rgba(31, 36, 48, 0.5); }
-html.zs-light #zs-state { color: #4b5563; }
-html.zs-light #zs-state b { color: #4f46e5; }
-html.zs-light #zs-state.zs-state-warn { color: #b91c1c; }
-html.zs-light #zs-bar.tone-active #zs-state b { color: #059669; }
-html.zs-light #zs-discord,
-html.zs-light #zs-support,
-html.zs-light #zs-switch {
+html.ai2roblox-light #ai2roblox-brand { color: #1f2430; }
+html.ai2roblox-light .ai2roblox-free { color: rgba(31, 36, 48, 0.5); }
+html.ai2roblox-light #ai2roblox-state { color: #4b5563; }
+html.ai2roblox-light #ai2roblox-state b { color: #4f46e5; }
+html.ai2roblox-light #ai2roblox-state.ai2roblox-state-warn { color: #b91c1c; }
+html.ai2roblox-light #ai2roblox-bar.tone-active #ai2roblox-state b { color: #059669; }
+html.ai2roblox-light #ai2roblox-discord,
+html.ai2roblox-light #ai2roblox-support,
+html.ai2roblox-light #ai2roblox-switch {
   background: rgba(0, 0, 0, 0.05); color: #4b5563;
   border-color: rgba(0, 0, 0, 0.12);
 }
-html.zs-light #zs-discord:hover,
-html.zs-light #zs-support:hover,
-html.zs-light #zs-switch:hover { background: rgba(0, 0, 0, 0.09); color: #1f2430; }
-html.zs-light #zs-action:disabled {
+html.ai2roblox-light #ai2roblox-discord:hover,
+html.ai2roblox-light #ai2roblox-support:hover,
+html.ai2roblox-light #ai2roblox-switch:hover { background: rgba(0, 0, 0, 0.09); color: #1f2430; }
+html.ai2roblox-light #ai2roblox-action:disabled {
   background: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.35); border-color: rgba(0, 0, 0, 0.08);
 }
 
-html.zs-light #zs-menu,
-html.zs-light #zs-setup {
+html.ai2roblox-light #ai2roblox-menu,
+html.ai2roblox-light #ai2roblox-setup {
   background: rgba(249, 250, 253, 0.99);
   color: #1f2430;
   border-color: rgba(99, 102, 241, 0.30);
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
 }
-html.zs-light .zs-menu-head,
-html.zs-light #zs-setup-head { border-bottom-color: rgba(0, 0, 0, 0.08); }
-html.zs-light .zs-menu-logo,
-html.zs-light #zs-setup-logo { color: #1f2430; }
-html.zs-light .zs-menu-tag,
-html.zs-light #zs-setup-tag { color: #8a8a92; }
-html.zs-light .zs-menu-sec + .zs-menu-sec { border-top-color: rgba(0, 0, 0, 0.07); }
-html.zs-light .zs-sec-label span { color: #6b6b73; }
-html.zs-light .zs-menu-note { color: #6b7280; }
-html.zs-light #zs-set-text,
-html.zs-light .zs-mcp-field {
+html.ai2roblox-light .ai2roblox-menu-head,
+html.ai2roblox-light #ai2roblox-setup-head { border-bottom-color: rgba(0, 0, 0, 0.08); }
+html.ai2roblox-light .ai2roblox-menu-logo,
+html.ai2roblox-light #ai2roblox-setup-logo { color: #1f2430; }
+html.ai2roblox-light .ai2roblox-menu-tag,
+html.ai2roblox-light #ai2roblox-setup-tag { color: #8a8a92; }
+html.ai2roblox-light .ai2roblox-menu-sec + .ai2roblox-menu-sec { border-top-color: rgba(0, 0, 0, 0.07); }
+html.ai2roblox-light .ai2roblox-sec-label span { color: #6b6b73; }
+html.ai2roblox-light .ai2roblox-menu-note { color: #6b7280; }
+html.ai2roblox-light #ai2roblox-set-text,
+html.ai2roblox-light .ai2roblox-mcp-field {
   background: #ffffff; color: #1f2430; border-color: rgba(0, 0, 0, 0.14);
 }
-html.zs-light .zs-mcp-item { background: #ffffff; border-color: rgba(0, 0, 0, 0.1); }
-html.zs-light .zs-mcp-name { color: #1f2430; }
-html.zs-light .zs-mcp-url { color: #6b7280; }
-html.zs-light .zs-mcp-remove { color: #8a8a92; }
-html.zs-light .zs-mcp-remove:hover { background: rgba(0, 0, 0, 0.06); color: #1f2430; }
-html.zs-light .zs-mcp-sep { background: rgba(0, 0, 0, 0.08); }
-html.zs-light .zs-mcp-spin { border-color: rgba(0, 0, 0, 0.15); border-top-color: #4b5563; }
-html.zs-light #zs-setup-sub { color: #4b5563; }
-html.zs-light #zs-setup-steps li { color: #374151; }
-html.zs-light #zs-setup-steps li + li { border-top-color: rgba(0, 0, 0, 0.06); }
-html.zs-light #zs-setup-steps li::before { color: #8a8a92; }
-html.zs-light #zs-setup-steps code { background: rgba(0, 0, 0, 0.06); }
-html.zs-light #zs-setup-dismiss { border-color: rgba(0, 0, 0, 0.12); color: #4b5563; }
-html.zs-light #zs-setup-dismiss:hover { background: rgba(0, 0, 0, 0.05); }
+html.ai2roblox-light .ai2roblox-mcp-item { background: #ffffff; border-color: rgba(0, 0, 0, 0.1); }
+html.ai2roblox-light .ai2roblox-mcp-name { color: #1f2430; }
+html.ai2roblox-light .ai2roblox-mcp-url { color: #6b7280; }
+html.ai2roblox-light .ai2roblox-mcp-remove { color: #8a8a92; }
+html.ai2roblox-light .ai2roblox-mcp-remove:hover { background: rgba(0, 0, 0, 0.06); color: #1f2430; }
+html.ai2roblox-light .ai2roblox-mcp-sep { background: rgba(0, 0, 0, 0.08); }
+html.ai2roblox-light .ai2roblox-mcp-spin { border-color: rgba(0, 0, 0, 0.15); border-top-color: #4b5563; }
+html.ai2roblox-light #ai2roblox-setup-sub { color: #4b5563; }
+html.ai2roblox-light #ai2roblox-setup-steps li { color: #374151; }
+html.ai2roblox-light #ai2roblox-setup-steps li + li { border-top-color: rgba(0, 0, 0, 0.06); }
+html.ai2roblox-light #ai2roblox-setup-steps li::before { color: #8a8a92; }
+html.ai2roblox-light #ai2roblox-setup-steps code { background: rgba(0, 0, 0, 0.06); }
+html.ai2roblox-light #ai2roblox-setup-dismiss { border-color: rgba(0, 0, 0, 0.12); color: #4b5563; }
+html.ai2roblox-light #ai2roblox-setup-dismiss:hover { background: rgba(0, 0, 0, 0.05); }
 
 /* Menu contents in light theme: neutral grays, subtle surfaces on hover */
-html.zs-light .zs-site-opt { color: #4b5563; }
-html.zs-light .zs-site-name > span:first-child { color: #1f2430; }
-html.zs-light .zs-site-host { color: #9ca3af; }
-html.zs-light button.zs-site-opt:hover { background: rgba(0, 0, 0, 0.05); }
-html.zs-light .zs-site-badge { color: #6b7280; border-color: rgba(0, 0, 0, 0.14); }
-html.zs-light .zs-site-go { color: #9ca3af; }
-html.zs-light #zs-set-save,
-html.zs-light #zs-mcp-add,
-html.zs-light .zs-tip-opt {
+html.ai2roblox-light .ai2roblox-site-opt { color: #4b5563; }
+html.ai2roblox-light .ai2roblox-site-name > span:first-child { color: #1f2430; }
+html.ai2roblox-light .ai2roblox-site-host { color: #9ca3af; }
+html.ai2roblox-light button.ai2roblox-site-opt:hover { background: rgba(0, 0, 0, 0.05); }
+html.ai2roblox-light .ai2roblox-site-badge { color: #6b7280; border-color: rgba(0, 0, 0, 0.14); }
+html.ai2roblox-light .ai2roblox-site-go { color: #9ca3af; }
+html.ai2roblox-light #ai2roblox-set-save,
+html.ai2roblox-light #ai2roblox-mcp-add,
+html.ai2roblox-light .ai2roblox-tip-opt {
   background: rgba(0, 0, 0, 0.05); color: #1f2430; border-color: rgba(0, 0, 0, 0.12);
 }
-html.zs-light #zs-set-save:hover,
-html.zs-light #zs-mcp-add:hover,
-html.zs-light .zs-tip-opt:hover { background: rgba(0, 0, 0, 0.09); }
-html.zs-light #zs-set-status,
-html.zs-light #zs-mcp-status,
-html.zs-light .zs-tip-sub,
-html.zs-light .zs-rbx-cur,
-html.zs-light .zs-tip-sep { color: #6b7280; }
-html.zs-light .zs-tip-rbx { color: #374151; }
+html.ai2roblox-light #ai2roblox-set-save:hover,
+html.ai2roblox-light #ai2roblox-mcp-add:hover,
+html.ai2roblox-light .ai2roblox-tip-opt:hover { background: rgba(0, 0, 0, 0.09); }
+html.ai2roblox-light #ai2roblox-set-status,
+html.ai2roblox-light #ai2roblox-mcp-status,
+html.ai2roblox-light .ai2roblox-tip-sub,
+html.ai2roblox-light .ai2roblox-rbx-cur,
+html.ai2roblox-light .ai2roblox-tip-sep { color: #6b7280; }
+html.ai2roblox-light .ai2roblox-tip-rbx { color: #374151; }

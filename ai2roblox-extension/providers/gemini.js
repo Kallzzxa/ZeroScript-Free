@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/gemini.js - the Google Gemini (gemini.google.com) provider.
-// Exports the same ZSProvider interface as providers/deepseek.js; the core
+// Exports the same AI2RobLoxProvider interface as providers/deepseek.js; the core
 // (core/main.js) is provider-agnostic. To DISABLE Gemini support, simply remove
 // this file from manifest.json (and its URL from background.js PROVIDER_URLS).
 //
@@ -23,7 +23,7 @@
 //  - No truncation "Continue" button; no per-turn "stopped" marker we can
 //    rely on → findContinueBtn/turnHalted return null/false.
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -116,15 +116,15 @@ const ZSProvider = (() => {
   const assistantItems = () => [...document.querySelectorAll(S.assistantItem)];
   const assistantCount = () => assistantItems().length;
   const userCount = () => document.querySelectorAll(S.userItem).length;
-  // Scope to the SITE's composer only: skip ZeroScript's own injected UI (the
-  // settings textarea #zs-set-text in #zs-root). On login/OAuth pages with no
+  // Scope to the SITE's composer only: skip AI2RobLox's own injected UI (the
+  // settings textarea #ai2roblox-set-text in #ai2roblox-root). On login/OAuth pages with no
   // site editor this returns null, keeping the "not on a chat page" guard in
   // the send hooks intact (otherwise our own textarea would defeat it and the
   // hooks could swallow the site's login button).
   const getEditor = () => {
     for (const sel of [S.editor, ".ql-editor"]) {
       for (const e of document.querySelectorAll(sel)) {
-        if (!e.closest("#zs-root")) return e;
+        if (!e.closest("#ai2roblox-root")) return e;
       }
     }
     return null;
@@ -147,7 +147,7 @@ const ZSProvider = (() => {
   // message is actually sent, validated live 2026-07). Gating on the URL left
   // isFreshChat() - and, transitively, conversationKey() below - still seeing
   // the OLD conversation id on a chat that was visually empty, so the
-  // ZeroScript bar stuck on "Agent active" with no way to start a new session.
+  // AI2RobLox bar stuck on "Agent active" with no way to start a new session.
   const isFreshChat = () => chatIsEmpty() && !!getEditor();
 
   // The composer box the Start gate hides as one unit.
@@ -175,8 +175,8 @@ const ZSProvider = (() => {
     if (!ed) return;
     ed.setAttribute("contenteditable", on ? "false" : "true");
     const ph = ed.closest("rich-textarea") || ed;
-    if (on) ph.setAttribute("data-zs-locked", "1");
-    else ph.removeAttribute("data-zs-locked");
+    if (on) ph.setAttribute("data-ai2roblox-locked", "1");
+    else ph.removeAttribute("data-ai2roblox-locked");
   }
 
   // ── Action button (send / stop / mic) ─────────────────────────────────────
@@ -200,7 +200,7 @@ const ZSProvider = (() => {
     if (!item) return "";
     const think = item.querySelector(S.thinking);
     const md = item.querySelector(S.reply);
-    return (think ? think.textContent || "" : "") + "\n" + (md ? textWithout(md, ".zs-chip") : "");
+    return (think ? think.textContent || "" : "") + "\n" + (md ? textWithout(md, ".ai2roblox-chip") : "");
   }
   const streamLen = (item) => streamText(item === undefined ? lastAssistant() : item).length;
 
@@ -304,7 +304,7 @@ const ZSProvider = (() => {
     const md = item.querySelector(S.reply);
     return {
       present: true,
-      reply: md ? textWithout(md, ".zs-chip").trim() : "",
+      reply: md ? textWithout(md, ".ai2roblox-chip").trim() : "",
       thinking: think ? (think.textContent || "").trim() : "",
       item,
     };
@@ -358,7 +358,7 @@ const ZSProvider = (() => {
     const lines = String(text).split("\n");
     if (text.length <= SEND_MAX_CHARS && lines.length <= SEND_MAX_LINES) return text;
     const marker = (what) =>
-      `\n\n[…ZeroScript: result truncated (${what}) so it can be pasted into ` +
+      `\n\n[…AI2RobLox: result truncated (${what}) so it can be pasted into ` +
       `Gemini's composer without freezing the page. Do NOT re-run the command; ` +
       `work with the head and tail shown here…]\n\n`;
     let out, note;
@@ -619,7 +619,7 @@ const ZSProvider = (() => {
   // The host-walk the DeepSeek provider uses is WRONG here - it descends inside
   // a code-block, so hiding the wrapper then fails. The core anchors the chip at
   // the turn level (chipAtItemLevel), so the returned position is unused; this
-  // function's real job is applying the .zs-tool-hide classes correctly.
+  // function's real job is applying the .ai2roblox-tool-hide classes correctly.
   const CMD_SHAPE = /"(?:command|tool)"\s*:\s*"|###\s*lua|###mcp_tool###/i;
   function findToolBlockSpot(item /*, chip */) {
     const replies = [...item.querySelectorAll(S.reply)].filter((m) => !m.closest(S.thinking));
@@ -627,26 +627,26 @@ const ZSProvider = (() => {
     for (const mc of replies) {
       // 1. Fenced code blocks carrying a command.
       mc.querySelectorAll(S.codeWrap).forEach((cb) => {
-        if (cb.closest(".zs-chip")) return;
+        if (cb.closest(".ai2roblox-chip")) return;
         if (CMD_SHAPE.test(cb.textContent || "")) {
-          cb.classList.add("zs-tool-hide");
+          cb.classList.add("ai2roblox-tool-hide");
           // Angular recreates <code-block> nodes (markdown settle at end of
           // stream + again when the next turn is sent), stripping the class
           // above and flashing the raw command until the next sweep. The
           // <message-content> element KEEPS its identity through those
           // re-renders (validated live), so also mark it: the overlay.css
-          // rule `message-content.zs-cmd-mask code-block` keeps every
+          // rule `message-content.ai2roblox-cmd-mask code-block` keeps every
           // recreated block hidden with zero flash.
-          mc.classList.add("zs-cmd-mask");
+          mc.classList.add("ai2roblox-cmd-mask");
           hidAny = hidAny || { parent: cb.parentElement, ref: cb };
         }
       });
       // 2. Bare top-level blocks with an inline command (no code-block inside).
       [...mc.children].forEach((el) => {
-        if (el.classList.contains("zs-chip") || el.querySelector(S.codeWrap)) return;
+        if (el.classList.contains("ai2roblox-chip") || el.querySelector(S.codeWrap)) return;
         const t = el.textContent || "";
         if (t.length < 600 && CMD_SHAPE.test(t)) {
-          el.classList.add("zs-tool-hide");
+          el.classList.add("ai2roblox-tool-hide");
           hidAny = hidAny || { parent: el.parentElement, ref: el };
         }
       });
@@ -686,7 +686,7 @@ const ZSProvider = (() => {
     // watcher uses this to refuse finalizing before this send's reply turn
     // exists (fixes premature loop.end on the previous turn's stable text).
     reliableCounts: true,
-    // Shown as a permanent, non-intrusive notice in the ZeroScript panel.
+    // Shown as a permanent, non-intrusive notice in the AI2RobLox panel.
     // Gemini drifts away from emitting tool blocks after a while in long
     // sessions - observed live, model behavior, not something the prompt fixes.
     unstableWarning:

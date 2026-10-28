@@ -62,7 +62,7 @@ global.CustomEvent = class { constructor(t) { this.type = t; } };
 global.MutationObserver = class { observe() {} disconnect() {} };
 global.getComputedStyle = () => ({});
 const P = new Function(
-  fs.readFileSync(__dirname + "/providers/chatgpt.js", "utf8") + "; return ZSProvider;"
+  fs.readFileSync(__dirname + "/providers/chatgpt.js", "utf8") + "; return AI2RobLoxProvider;"
 )();
 
 const ok = (name, cond) => { console.log((cond ? "PASS" : "FAIL") + "  " + name); if (!cond) process.exitCode = 1; };
@@ -87,19 +87,19 @@ ok("empty cm-line survives as a blank line", /local a = 1\n\nreturn a/.test(blan
 // ── The MAIN-world tap wins over the rendered lines ─────────────────────────
 // Past ~2000-4000 chars CodeMirror renders only PART of a long line, so the
 // visible lines are a truncated copy. providers/chatgpt-cm.js publishes the
-// editor's true document on data-zs-cm; when present it must be used verbatim
+// editor's true document on data-ai2roblox-cm; when present it must be used verbatim
 // and the (short) rendered subtree ignored - this is what made a 21k-character
 // command stop executing cut off.
 const full = '{"command":"multi_edit","params":{"edits":[{"old_string":"a","new_string":"' + "x".repeat(5000) + '"}]}}';
-const tapped = P.textWithout(cmBlock(['{"command":"multi_edit","params":{"edits":[{"old_str'], { "data-zs-cm": full }));
-ok("data-zs-cm tap is preferred over rendered lines", tapped.includes(full));
+const tapped = P.textWithout(cmBlock(['{"command":"multi_edit","params":{"edits":[{"old_str'], { "data-ai2roblox-cm": full }));
+ok("data-ai2roblox-cm tap is preferred over rendered lines", tapped.includes(full));
 ok("tapped block parses as JSON", (() => {
   const s = tapped.slice(tapped.indexOf("{"), tapped.lastIndexOf("}") + 1);
   try { return JSON.parse(s).params.edits[0].new_string.length === 5000; } catch { return false; }
 })());
 // An EMPTY tap value is still a real document (an empty editor), not a missing
 // attribute: getAttribute must be checked against null, never falsiness.
-const emptyTap = P.textWithout(cmBlock(["stale rendered text"], { "data-zs-cm": "" }));
+const emptyTap = P.textWithout(cmBlock(["stale rendered text"], { "data-ai2roblox-cm": "" }));
 ok("empty tap value is honoured, not treated as absent", !emptyTap.includes("stale"));
 
 // ── Ordinary prose is untouched ─────────────────────────────────────────────
@@ -116,10 +116,10 @@ ok("blocks separate, inline text stays joined", /Running the command now:\nDone 
 ok("a <br> is a newline", /^a\nb\n?$/.test(P.textWithout(el("p", {}, ["a", el("br", {}), "b"]))));
 
 // ── excludeSel ──────────────────────────────────────────────────────────────
-// The core passes ".zs-chip" so its own injected chip never counts as model
+// The core passes ".ai2roblox-chip" so its own injected chip never counts as model
 // output (a chip echoing a tool name would otherwise re-trigger the call).
 const withChip = P.textWithout(
-  el("div", {}, [el("p", {}, ["real reply"]), el("div", { class: "zs-chip" }, ["execute_luau · 2s"])]),
-  ".zs-chip"
+  el("div", {}, [el("p", {}, ["real reply"]), el("div", { class: "ai2roblox-chip" }, ["execute_luau · 2s"])]),
+  ".ai2roblox-chip"
 );
 ok("excluded subtree is skipped", withChip.includes("real reply") && !withChip.includes("execute_luau"));

@@ -1,6 +1,28 @@
 # Changelog
 
-All notable changes to ZeroScript Free are documented here.
+All notable changes to AI2RobLox Free are documented here.
+
+## [1.5.12] - 2026-10-28
+
+### Changed - BREAKING REBRAND
+- **ZeroScript is now AI2RobLox, everywhere including internal code.**
+  Display name, README, system prompt, markers, and internal identifiers
+  were renamed consistently: ZeroScript -> AI2RobLox, ZSProvider ->
+  AI2RobLoxProvider, ZSParse -> AI2RobLoxParse, the system marker
+  ⟦ZS-SYS⟧ -> ⟦AI2RobLox-SYS⟧, all zs- CSS classes / UI ids ->
+  ai2roblox-, internal dataset keys (zphase, zStopped, zRegenLen, etc.)
+  -> ai2robloxPhase, ai2robloxStopped, ai2robloxRegenLen, etc., and
+  the extension folder zeroscript-extension ->
+  ai2roblox-extension. Load the extension from the new folder name.
+- **Breaking, by design:** a chat started under the old name / old marker
+  is NOT recognised as an AI2RobLox session - start a fresh chat after
+  reloading. The project memory path also moved: the old
+  game.ServerStorage.ZeroScript.Memory is no longer read; the new path
+  is game.ServerStorage.AI2RobLox.Memory. Copy the old memory content
+  over by hand if you want to keep it.
+- Upstream attribution links are kept as-is (the original
+  sebattfg/ZeroScript-Free repository and website) - this fork is a
+  rebrand of that project, not a claim that the original never existed.
 
 ## [1.5.11] - 2026-10-28
 
@@ -75,9 +97,9 @@ All notable changes to ZeroScript Free are documented here.
 
 ### Added
 - **Muse support (experimental).** A new `providers/muse.js` adapter turns
-  muse.ai into a ZeroScript provider, wired into manifest.json (host
+  muse.ai into an AI2RobLox provider, wired into manifest.json (host
   permission + content script), background.js provider URLs, and the popup's
-  supported-host list. It implements the full ZSProvider interface with
+  supported-host list. It implements the full AI2RobLoxProvider interface with
   layered fallback selectors for the composer, Send/Stop buttons, and
   message turns, plus Muse-specific system-prompt notes. Vision
   (screen_capture) is off until Muse's attachment UI is mapped.
@@ -91,23 +113,23 @@ All notable changes to ZeroScript Free are documented here.
 ### Fixed
 - **DeepSeek: the agent starts again on DeepSeek's new unified model.**
   DeepSeek merged Instant, Expert and Vision into a single model and removed
-  the model picker from the chat box. ZeroScript waited for one of those tabs
+  the model picker from the chat box. AI2RobLox waited for one of those tabs
   to be selected before starting, so "Start Roblox agent" stopped with
   "DeepSeek mode not ready". A chat box with no model picker is now recognised
-  as the unified model: ZeroScript switches Search off as before, leaves
+  as the unified model: AI2RobLox switches Search off as before, leaves
   DeepThink on, and starts.
 - **DeepSeek: screenshots work on every chat.** Images used to need the Vision
   tab, which no longer exists, so `screen_capture` was refused. The unified
-  model reads images, and ZeroScript now sends them - one capture or several
+  model reads images, and AI2RobLox now sends them - one capture or several
   in a row. Older conversations still marked Instant or Expert stay text-only.
 
 ## [1.5.4] - 2026-09-06
 
 ### Fixed
-- **ChatGPT: the ZeroScript bar is back where it belongs, above the composer.**
+- **ChatGPT: the AI2RobLox bar is back where it belongs, above the composer.**
   ChatGPT redesigned its input box and renamed the layout slots it is built
   from: the full-width row across the top used to be called `header` and is now
-  called `eyebrow`. ZeroScript still asked for `header`, a name that no longer
+  called `eyebrow`. AI2RobLox still asked for `header`, a name that no longer
   exists, so the browser invented a place for the bar instead - it landed in a
   stray strip at the bottom right of the composer, and the text field itself was
   squeezed to zero width in the process. The bar now claims the correct row, and
@@ -128,7 +150,7 @@ All notable changes to ZeroScript Free are documented here.
 - **Kimi moved to kimi.ai.** Kimi's old address, `kimi.com`, now asks for a
   Chinese phone number to sign in, which locked most people out. Kimi runs on
   `kimi.ai` from now on - the extension only activates there. The page itself is
-  unchanged, so nothing about using Kimi with ZeroScript is different: open
+  unchanged, so nothing about using Kimi with AI2RobLox is different: open
   https://www.kimi.ai, the bar appears above the input box as before. If you had
   Kimi tabs open on the old address, reopen them on the new one.
 - **DeepSeek: the Instant model is now allowed to run the agent.** Starting a
@@ -143,14 +165,14 @@ All notable changes to ZeroScript Free are documented here.
 ### Fixed
 - **DeepSeek: a reply written in DeepSeek's own tool-call markup no longer kills
   the turn.** DeepSeek sometimes answers with its internal DSML invoke tags
-  instead of a ZeroScript command. That format carries none of the markers
-  ZeroScript looks for, so nothing recognised it as a command attempt: the tool
+  instead of an AI2RobLox command. That format carries none of the markers
+  AI2RobLox looks for, so nothing recognised it as a command attempt: the tool
   never ran, the raw tags were left on screen, and the agent silently stopped
   with the user waiting on a dead turn. It is now detected, the markup is hidden
   behind a tool chip like any other command, and DeepSeek is told the format is
   unreadable so it rewrites the call properly. The chip shows the usual spinner
   while the model is still writing, then settles red as "wrong format".
-- **ChatGPT: the ZeroScript bar no longer collides with the composer's rounded
+- **ChatGPT: the AI2RobLox bar no longer collides with the composer's rounded
   corners.** The composer card is rounded by 28px and the bar sits flush against
   its top edge, so the Discord button's corner fell outside the rounded shape and
   was sliced off by the card. Both ends of the bar are inset to clear the curve.
@@ -181,9 +203,9 @@ All notable changes to ZeroScript Free are documented here.
   (seen on Qwen writing for 400s and more) the loop could give up while the model
   was still going; eight seconds later the completed command was written off for
   good. That window is now three minutes, so the command actually runs.
-- **A clear message when ZeroScript is updated while a tab is open.** Chrome
+- **A clear message when AI2RobLox is updated while a tab is open.** Chrome
   updates extensions underneath open tabs, which leaves the page running a
-  version that no longer exists. ZeroScript reported this as "the bridge stopped
+  version that no longer exists. AI2RobLox reported this as "the bridge stopped
   on your PC - run start.bat", sending you to fix something that was never
   broken. It now says plainly that the page needs reloading, and offers a Reload
   button - your bridge and Studio are untouched.
@@ -194,7 +216,7 @@ All notable changes to ZeroScript Free are documented here.
 ## [1.5.1] - 2026-08-13
 
 ### Added
-- **ChatGPT support (chatgpt.com).** ZeroScript now runs on ChatGPT as an
+- **ChatGPT support (chatgpt.com).** AI2RobLox now runs on ChatGPT as an
   eighth provider. Image input is deliberately disabled there: ChatGPT's free
   tier caps files/images on a separate quota from messages, so vision would
   work only part of the day. Reasoning mode ("Analyser") and the model picker
@@ -205,7 +227,7 @@ All notable changes to ZeroScript Free are documented here.
   ```json block as an interactive viewer whose default *Tree* view does not
   merely decorate the JSON - it **abridges** it: a large array or object is
   replaced by a summary placeholder. A 19103-character `multi_edit` was present
-  in the page as 223 characters ending in `"edits":[1 item]`, so ZeroScript sent
+  in the page as 223 characters ending in `"edits":[1 item]`, so AI2RobLox sent
   the parser a truncated object and the command came back as a parse error every
   time. This is also why the tool chip's token counter climbed while the reply
   streamed and then **collapsed to about 44 tokens** the moment the block
@@ -213,7 +235,7 @@ All notable changes to ZeroScript Free are documented here.
   Command blocks are now switched to the viewer's *Raw* tab, which holds the
   verbatim source; the 19103-character payload is read whole.
 - **Clearer diagnosis when Roblox refuses to parse Luau.** "Failed to parse
-  command code" is Studio's generic parse rejection, but ZeroScript always
+  command code" is Studio's generic parse rejection, but AI2RobLox always
   answered it with "your code block was empty or the marker was wrong". When a
   full code string *had* been sent, that advice pointed the model at a problem
   that did not exist, so it re-sent the same payload and failed again. The hint
@@ -233,7 +255,7 @@ All notable changes to ZeroScript Free are documented here.
   rendered text then stays frozen while the model keeps writing - the tool
   chip's token counter would climb, drop back to about 500 tokens, freeze
   there, and the command would run cut off. Measured live: a 21273-character
-  command of which the page exposed 4049. ZeroScript now reads the editor's
+  command of which the page exposed 4049. AI2RobLox now reads the editor's
   real document instead of the rendered page, through a new MAIN-world tap
   (`providers/chatgpt-cm.js`), the same approach already used for Qwen's
   Monaco editor. A 5.3k-token `multi_edit` now applies whole.
@@ -247,7 +269,7 @@ All notable changes to ZeroScript Free are documented here.
   `{"toolName": "get_studio_state", "studio_id": "…"}` names a real tool but
   uses the wrong key, so nothing recognised it as a command: the turn was
   finalised as a plain-text answer and the loop simply ended, leaving the agent
-  looking frozen (seen on ChatGPT in a long session). ZeroScript now spots a
+  looking frozen (seen on ChatGPT in a long session). AI2RobLox now spots a
   known tool named under `toolName` / `tool` / `name` / `function` / `action`
   and asks the model to rewrite it with the proper envelope, exactly as it
   already did for a missing `###LUA###` opener or bare parameters. Prose that
@@ -357,7 +379,7 @@ All notable changes to ZeroScript Free are documented here.
   painted a green check. The dedupe now keys on Qwen's stable per-turn id
   (`chat-response-message-<uuid>`, exposed as `itemKey`) instead of the index, so
   the collision cannot happen.
-- **Qwen: the ZeroScript bar covered the "Expand more models" submenu.** That
+- **Qwen: the AI2RobLox bar covered the "Expand more models" submenu.** That
   fly-out is a separate body-portalled `.ant-dropdown` at a low z-index, not the
   main model dropdown, so the bar drew on top of it. Raised just that dropdown
   above the bar (scoped so other Ant menus and tooltips are untouched).
@@ -381,7 +403,7 @@ All notable changes to ZeroScript Free are documented here.
 ## [1.4.6] - 2026-07-19
 
 ### Fixed
-- **Kimi's login and "priority queue" popups were covered by the ZeroScript
+- **Kimi's login and "priority queue" popups were covered by the AI2RobLox
   bar**: both render as full-screen fixed masks (`.login-modal-mask` and
   `.modal-mask`) rather than a standard `[role="dialog"]`, so the generic
   overlay probe used by other providers never caught them. The anchored bar
@@ -453,7 +475,7 @@ Adds a seventh AI provider (Meta AI) and fixes a Qwen tool-turn regression, plus
 further Studio-port recovery hardening and a friendlier system prompt.
 
 ### Added
-- **Meta AI (www.meta.ai) as a provider**: full ZeroScript support on Meta AI -
+- **Meta AI (www.meta.ai) as a provider**: full AI2RobLox support on Meta AI -
   new `providers/meta.js`, manifest content script + host permissions, and the
   provider switcher entry. Handles Meta's React DOM: reasoning ("Réflexion")
   chain-of-thought is excluded from the read text, the interactive JSON viewer
@@ -534,7 +556,7 @@ third-party app silently hijacking Studio's MCP port.
   the process tree can't be read, nothing is killed (a healthy connection is
   never put at risk).
 - The extension now tells non-technical users to "Run start.bat" instead of
-  "Run python bridge.py" / "Run the ZeroScript bridge" in the offline panel,
+  "Run python bridge.py" / "Run the AI2RobLox bridge" in the offline panel,
   popup, and startup banner, matching the one-click launcher the README ships.
 
 ## [1.4.1] - 2026-07-11
@@ -647,7 +669,7 @@ stale-pipe disconnects, MCP toggle turning off after a Studio update).
   into the visible reply when nested inside a paragraph. An image filename
   could corrupt result-chip detection.
 - Kimi: added detection of Kimi's own native "Agent" mode, which conflicts
-  with ZeroScript's command protocol; Start is disabled with a warning until
+  with AI2RobLox's command protocol; Start is disabled with a warning until
   it's turned off. Fixed the hidden file-upload input not existing until the
   "+" menu is opened, raw command text leaking when nested/oversized, and
   normal model prose containing "try again" being misread as a site error.
@@ -663,12 +685,12 @@ stale-pipe disconnects, MCP toggle turning off after a Studio update).
   neutral "not run" state instead.
 - A tool's own in-body error (e.g. "Output of '...': Error executing code...")
   now settles the chip red instead of green, even when the tool didn't use
-  ZeroScript's own ERROR wrapper.
+  AI2RobLox's own ERROR wrapper.
 - Regenerating a stopped command no longer briefly re-shows the old call's
   chip before the new one streams in.
 
 ### Changed
-- The version number next to the ZeroScript name in the panel is now small,
+- The version number next to the AI2RobLox name in the panel is now small,
   plain text instead of a bordered green badge.
 - System prompt updated to cover multiple MCP servers: the model must call
   `list_mcp_servers` before assuming something outside Roblox is unsupported,
@@ -692,7 +714,7 @@ stale-pipe disconnects, MCP toggle turning off after a Studio update).
   MCP server / bridge offline).
 - Cross-provider: DeepSeek, Gemini, Kimi, GLM and Qwen composer menus, model
   pickers and tooltips (including GLM's search hover card and Kimi's model
-  popover) no longer render clipped or hidden behind ZeroScript's own
+  popover) no longer render clipped or hidden behind AI2RobLox's own
   bar/pill/cover.
 - Cross-provider: a thinking model quoting command JSON in its own reasoning
   area no longer makes the tool chip flap between done/run/done (Gemini, Kimi,
@@ -741,7 +763,7 @@ stale-pipe disconnects, MCP toggle turning off after a Studio update).
 ## [1.0.0] - 2026-06-09
 
 ### Added
-- Initial public release of ZeroScript Free
+- Initial public release of AI2RobLox Free
 - Browser extension for Chrome and Edge (DeepSeek chat integration)
 - Local Python bridge (`bridge.py` + `start.bat`) for Roblox Studio communication
 - Built-in MCP server support (no plugin required - activate directly in Roblox Studio)

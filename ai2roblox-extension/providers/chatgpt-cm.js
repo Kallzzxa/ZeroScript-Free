@@ -17,7 +17,7 @@
 //     drop to ~500 and freeze there while ChatGPT was visibly still generating.
 //     That ~500-token ceiling IS this ~2000-char rendering cap.
 //     It is NOT caused by our camouflage: revealing the block (removing
-//     .zs-tool-hide / .zs-cmd-mask) and re-measuring after a layout + 800ms gave
+//     .ai2roblox-tool-hide / .ai2roblox-cmd-mask) and re-measuring after a layout + 800ms gave
 //     the exact same 2339 chars. CodeMirror simply does not put the whole
 //     document in the DOM.
 //
@@ -28,7 +28,7 @@
 // it republishes each block's true document into a DOM attribute, which IS
 // shared across worlds, so providers/chatgpt.js can read it.
 //
-// Protocol: the isolated world dispatches a "zs-cm-sync" CustomEvent on
+// Protocol: the isolated world dispatches a "ai2roblox-cm-sync" CustomEvent on
 // document; DOM event dispatch runs listeners SYNCHRONOUSLY across worlds, so by
 // the time dispatchEvent() returns, every attribute is up to date and can be read
 // in the same tick. If this script is not loaded, the attribute is simply absent
@@ -38,8 +38,8 @@
   if (window.__zsChatgptCm) return;
   window.__zsChatgptCm = true;
 
-  const ATTR = "data-zs-cm";
-  const LEN = "data-zs-cm-len";
+  const ATTR = "data-ai2roblox-cm";
+  const LEN = "data-ai2roblox-cm-len";
 
   // Republishing a 10k-char attribute on every sample would churn the DOM (the
   // core samples the stream ~8x/s). Only write when the document actually grew
@@ -82,7 +82,7 @@
     return n;
   }
 
-  document.addEventListener("zs-cm-sync", () => { try { syncAll(); } catch {} }, true);
+  document.addEventListener("ai2roblox-cm-sync", () => { try { syncAll(); } catch {} }, true);
 
   // A streaming block changes without anyone asking, and the isolated world only
   // syncs when it reads. That is enough for correctness, but a cheap idle sync

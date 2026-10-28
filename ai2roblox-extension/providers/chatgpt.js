@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/chatgpt.js - the OpenAI ChatGPT (chatgpt.com) provider.
-// Exports the same ZSProvider interface as providers/deepseek.js and
+// Exports the same AI2RobLoxProvider interface as providers/deepseek.js and
 // providers/gemini.js; the core (core/main.js) is provider-agnostic. To DISABLE
 // ChatGPT support, remove this file from manifest.json (and its URL from
 // background.js PROVIDER_URLS + manifest host_permissions + popup.js
@@ -57,7 +57,7 @@
 //    vision is disabled here (supportsVision: false) rather than working only
 //    part of the day. ChatGPT announces the quota walls itself, in the thread.
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -143,7 +143,7 @@ const ZSProvider = (() => {
   // 2339 of 10040 chars, and a sibling block cut off mid-JSON). The real document
   // lives in CodeMirror's state, behind a page-world expando a content script
   // cannot see - providers/chatgpt-cm.js runs in the MAIN world and republishes it
-  // into data-zs-cm. syncCM() asks for a refresh; the listener is synchronous, so
+  // into data-ai2roblox-cm. syncCM() asks for a refresh; the listener is synchronous, so
   // the attribute is current the moment dispatchEvent returns. If that script is
   // absent the attribute is too, and we fall back to the .cm-line join (which is
   // correct for anything under ~4000 chars).
@@ -151,7 +151,7 @@ const ZSProvider = (() => {
   let _cmWarned = false;
   function syncCM(root) {
     if (!root || !root.querySelector || !root.querySelector(".cm-content")) return;
-    try { document.dispatchEvent(new CustomEvent("zs-cm-sync")); } catch {}
+    try { document.dispatchEvent(new CustomEvent("ai2roblox-cm-sync")); } catch {}
   }
   function textWithout(root, excludeSel) {
     if (!root) return "";
@@ -166,7 +166,7 @@ const ZSProvider = (() => {
       // The editor's TRUE document, published by the MAIN-world tap. This is the
       // only complete source for a long block - take it and skip the subtree.
       if (n.classList && n.classList.contains("cm-content")) {
-        const full = n.getAttribute("data-zs-cm");
+        const full = n.getAttribute("data-ai2roblox-cm");
         if (full !== null) {
           breakLine();
           t += full;
@@ -270,7 +270,7 @@ const ZSProvider = (() => {
     return ed.closest("[class*='prosemirror-parent']") || ed;
   };
 
-  // Where the ZeroScript bar lives: INSIDE the rounded composer surface (the
+  // Where the AI2RobLox bar lives: INSIDE the rounded composer surface (the
   // element carrying --composer-surface-primary), like DeepSeek - not floating
   // above it, which is narrower than the composer and covers the page's greeting.
   //
@@ -312,12 +312,12 @@ const ZSProvider = (() => {
     if (!box) return null;
     const area = topArea(box);
     if (area) {
-      const bar = document.getElementById("zs-bar");
+      const bar = document.getElementById("ai2roblox-bar");
       if (bar && bar.style.gridArea !== area) bar.style.gridArea = area;
     }
     // Skip our own bar if already mounted, otherwise we'd insert it before itself.
     let before = box.firstElementChild;
-    if (before && before.id === "zs-bar") before = before.nextElementSibling;
+    if (before && before.id === "ai2roblox-bar") before = before.nextElementSibling;
     return { parent: box, before, inside: true };
   }
 
@@ -330,8 +330,8 @@ const ZSProvider = (() => {
     const ed = getEditor();
     if (!ed) return;
     ed.setAttribute("contenteditable", on ? "false" : "true");
-    if (on) ed.setAttribute("data-zs-locked", "1");
-    else ed.removeAttribute("data-zs-locked");
+    if (on) ed.setAttribute("data-ai2roblox-locked", "1");
+    else ed.removeAttribute("data-ai2roblox-locked");
   }
 
   // ── Action buttons (send / stop) ──────────────────────────────────────────
@@ -364,7 +364,7 @@ const ZSProvider = (() => {
   // submit control stayed in its "Interrompre la réponse" role, so every send was
   // refused and the tool result was stranded in the composer). See unwedgeStop.
   function streamText(item) {
-    return item ? textWithout(item, ".zs-chip") : "";
+    return item ? textWithout(item, ".ai2roblox-chip") : "";
   }
   const streamLen = (item) => streamText(item === undefined ? lastAssistant() : item).length;
 
@@ -459,7 +459,7 @@ const ZSProvider = (() => {
     const mds = [...item.querySelectorAll(S.reply)];
     return {
       present: true,
-      reply: mds.map((m) => textWithout(m, ".zs-chip")).join("\n").trim(),
+      reply: mds.map((m) => textWithout(m, ".ai2roblox-chip")).join("\n").trim(),
       thinking: "", // reasoning is gated by the stop button, not parsed as text
       item,
     };
@@ -513,7 +513,7 @@ const ZSProvider = (() => {
     const lines = String(text).split("\n");
     if (text.length <= SEND_MAX_CHARS && lines.length <= SEND_MAX_LINES) return text;
     const marker = (what) =>
-      `\n\n[…ZeroScript: result truncated (${what}) so it can be pasted into ` +
+      `\n\n[…AI2RobLox: result truncated (${what}) so it can be pasted into ` +
       `ChatGPT's composer without freezing the page. Do NOT re-run the command; ` +
       `work with the head and tail shown here…]\n\n`;
     let out, note;
@@ -775,7 +775,7 @@ const ZSProvider = (() => {
   // producing a new picture instead of doing the Roblox work the image was
   // meant to illustrate. Its native image tool also runs in the sandbox that
   // cannot touch the user's project, so a generated image is a dead end here.
-  const PROMPT_EXTRA = `- WHEN THE USER SENDS AN IMAGE: by default it is REFERENCE MATERIAL for the work they want done in their project - a screenshot of a bug, a mockup of the UI they want, a photo of the thing to build, a picture of what is wrong in Studio. Look at it, use it to understand what they want, and then do that work with the ZeroScript commands. Do NOT generate a new image from it, and do NOT treat it as an image-editing request. Only generate an image when the user EXPLICITLY asks you to create, generate, draw or edit one ("make me an image of...", "generate a texture", "edit this picture"). If what they want from the image is genuinely unclear, ask them in one short sentence rather than guessing - and never guess "they want a picture".`;
+  const PROMPT_EXTRA = `- WHEN THE USER SENDS AN IMAGE: by default it is REFERENCE MATERIAL for the work they want done in their project - a screenshot of a bug, a mockup of the UI they want, a photo of the thing to build, a picture of what is wrong in Studio. Look at it, use it to understand what they want, and then do that work with the AI2RobLox commands. Do NOT generate a new image from it, and do NOT treat it as an image-editing request. Only generate an image when the user EXPLICITLY asks you to create, generate, draw or edit one ("make me an image of...", "generate a texture", "edit this picture"). If what they want from the image is genuinely unclear, ask them in one short sentence rather than guessing - and never guess "they want a picture".`;
 
   // ── User-send interception ────────────────────────────────────────────────
   function installSendHooks(handlers) {
@@ -840,7 +840,7 @@ const ZSProvider = (() => {
   // whose text carries a command shape, plus any bare top-level paragraph that
   // holds an inline command (the model is told to use code blocks, but this
   // catches a stray inline one). React re-creates these nodes on every token, so
-  // - like Gemini - we also mark the .markdown container with .zs-cmd-mask; the
+  // - like Gemini - we also mark the .markdown container with .ai2roblox-cmd-mask; the
   // overlay.css rule keeps every recreated <pre> hidden with no flash.
   const CMD_SHAPE = /"(?:command|tool)"\s*:\s*"|###\s*lua|###mcp_tool###/i;
   // Marker pair, for the UNFENCED case below. Kept separate from CMD_SHAPE so the
@@ -852,20 +852,20 @@ const ZSProvider = (() => {
     const replies = [...item.querySelectorAll(S.reply)];
     let hidAny = null;
     const hide = (el, mc) => {
-      el.classList.add("zs-tool-hide");
-      if (mc) mc.classList.add("zs-cmd-mask");
+      el.classList.add("ai2roblox-tool-hide");
+      if (mc) mc.classList.add("ai2roblox-cmd-mask");
       hidAny = hidAny || { parent: el.parentElement, ref: el };
     };
     for (const mc of replies) {
       // 1. Fenced code blocks carrying a command.
       mc.querySelectorAll(S.codeWrap).forEach((pre) => {
-        if (pre.closest(".zs-chip")) return;
+        if (pre.closest(".ai2roblox-chip")) return;
         if (CMD_SHAPE.test(pre.textContent || "")) hide(pre, mc);
       });
       // 2. Bare top-level blocks with an inline command (no <pre> inside).
       const kids = [...mc.children];
       kids.forEach((el) => {
-        if (el.classList.contains("zs-chip") || el.querySelector(S.codeWrap)) return;
+        if (el.classList.contains("ai2roblox-chip") || el.querySelector(S.codeWrap)) return;
         const t = el.textContent || "";
         if (t.length < 600 && CMD_SHAPE.test(t)) hide(el, null);
       });
@@ -880,18 +880,18 @@ const ZSProvider = (() => {
       let ranged = 0;
       for (let i = 0; i < kids.length; i++) {
         const el = kids[i];
-        if (el.classList.contains("zs-chip")) continue;
+        if (el.classList.contains("ai2roblox-chip")) continue;
         const t = el.textContent || "";
         if (!CMD_OPEN.test(t)) continue;
         if (CMD_CLOSE.test(t)) { hide(el, mc); ranged++; continue; } // all in one node
         for (let j = i; j < kids.length; j++) {
           const k = kids[j];
-          if (k.classList.contains("zs-chip")) continue;
+          if (k.classList.contains("ai2roblox-chip")) continue;
           hide(k, mc); ranged++;
           if (CMD_CLOSE.test(k.textContent || "")) { i = j; break; }
         }
       }
-      // Anti-reflash for the ranged case. .zs-cmd-mask only re-hides recreated
+      // Anti-reflash for the ranged case. .ai2roblox-cmd-mask only re-hides recreated
       // <pre>; the <p> siblings of an unfenced block carry nothing but their
       // per-element class, which React wipes on every token. When the range
       // covers the WHOLE reply (the observed shape - the message IS the command),
@@ -899,9 +899,9 @@ const ZSProvider = (() => {
       // real prose sits outside the range, we do NOT: hiding it would eat the
       // model's actual answer, and a per-token flash is the lesser evil.
       if (ranged) {
-        const body = kids.filter((k) => !k.classList.contains("zs-chip"));
-        if (body.length && body.every((k) => k.classList.contains("zs-tool-hide"))) {
-          mc.classList.add("zs-cmd-mask-all");
+        const body = kids.filter((k) => !k.classList.contains("ai2roblox-chip"));
+        if (body.length && body.every((k) => k.classList.contains("ai2roblox-tool-hide"))) {
+          mc.classList.add("ai2roblox-cmd-mask-all");
         }
       }
     }
@@ -943,8 +943,8 @@ const ZSProvider = (() => {
     init({ diag: d } = {}) {
       if (d) diag = d;
       // Version beacon: stamp the loaded build onto <html> so a reload can be
-      // confirmed from the page (read document.documentElement.dataset.zsGptVer).
-      try { document.documentElement.setAttribute("data-zs-gpt-ver", "2026-08-13_cmtap+toolkey"); } catch {}
+      // confirmed from the page (read document.documentElement.dataset.ai2robloxGptVer).
+      try { document.documentElement.setAttribute("data-ai2roblox-gpt-ver", "2026-08-13_cmtap+toolkey"); } catch {}
     },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,

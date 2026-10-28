@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // core/main.js - the provider-agnostic agentic loop, UI and session state.
-// Drives any AI chat site through the ZSProvider interface (providers/*.js):
-// waits for the model's reply, parses ZeroScript commands (ZSParse), asks the
+// Drives any AI chat site through the AI2RobLoxProvider interface (providers/*.js):
+// waits for the model's reply, parses AI2RobLox commands (AI2RobLoxParse), asks the
 // background worker to execute them on the Roblox MCP bridge, and feeds the
 // result back. Camouflages the system prompt ("Starting Up") and tool JSON
 // behind animated chips, masks injected input, and exposes a Stop button.
@@ -13,7 +13,7 @@
 
 (() => {
   "use strict";
-  const P = ZSProvider;
+  const P = AI2RobLoxProvider;
   const T = P.timings;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const log = (...a) => console.log("[zeroscript]", ...a);
@@ -36,7 +36,7 @@
   // ── Diagnostics ───────────────────────────────────────────────────────────
   // Persistent, lightweight breadcrumb log of the agentic loop's key decisions
   // (sends, response kinds, tool start/end, resumes, stops). Read back from the
-  // console (filter "[zs-diag]") or window.__zsDiag (also mirrored onto a hidden
+  // console (filter "[ai2roblox-diag]") or window.__zsDiag (also mirrored onto a hidden
   // DOM node for a main-world inspector). Each entry carries a turn snapshot.
   const ZS_DIAG_MAX = 300;
   const _diag = [];
@@ -46,10 +46,10 @@
                 data: data || null, snap };
     _diag.push(e);
     if (_diag.length > ZS_DIAG_MAX) _diag.shift();
-    try { console.log("[zs-diag]", e.iso, event, JSON.stringify({ ...data, ...snap })); } catch {}
+    try { console.log("[ai2roblox-diag]", e.iso, event, JSON.stringify({ ...data, ...snap })); } catch {}
     try {
-      let n = document.getElementById("zs-diag-log");
-      if (!n) { n = document.createElement("script"); n.type = "application/json"; n.id = "zs-diag-log"; (document.body || document.documentElement).appendChild(n); }
+      let n = document.getElementById("ai2roblox-diag-log");
+      if (!n) { n = document.createElement("script"); n.type = "application/json"; n.id = "ai2roblox-diag-log"; (document.body || document.documentElement).appendChild(n); }
       n.textContent = JSON.stringify(_diag);
     } catch {}
     try { window.__zsDiag = _diag; } catch {}
@@ -99,7 +99,7 @@
     { robux: 1000, id: 1865192973 },
   ];
   const passUrl = (id) => `https://www.roblox.com/game-pass/${id}`;
-  // AI chat sites ZeroScript works on. Keep in sync with manifest.json
+  // AI chat sites AI2RobLox works on. Keep in sync with manifest.json
   // content_scripts and background.js PROVIDER_URLS when adding a provider.
   const AI_SITES = [
     { name: "DeepSeek", url: "https://chat.deepseek.com/" },
@@ -391,7 +391,7 @@
     // the exact moment the watcher finalizes - the turn then ended as
     // kind:"empty" even though a (possibly cut-off) command was sitting there a
     // tick earlier, leaving a DEAD turn: no parse_error feedback, and the
-    // autoResume dedupe (zResume) blocks any later retry (validated live on a
+    // autoResume dedupe (ai2robloxResume) blocks any later retry (validated live on a
     // Qwen post-stop regenerate, 2026-07). Classify on this fallback instead of
     // declaring empty. Reset whenever the turn NODE changes so a new turn can
     // never inherit the previous turn's text.
@@ -462,7 +462,7 @@
       // carry, so curTok stayed null, `started` never latched, and the loop
       // sat in the pre-start branch for the full 60s before ending "empty" -
       // the regenerated command (complete in the net tap) was never run and
-      // zResume then blocked any retry (validated live via empty.why, 2026-07).
+      // ai2robloxResume then blocked any retry (validated live via empty.why, 2026-07).
       // Fall back to the count test instead, exactly as for a provider with no
       // lastAssistantId at all.
       const newReply = (curTok !== undefined && curTok !== null)
@@ -519,7 +519,7 @@
 
       // Keep waiting while a tool command is still being streamed (opener written
       // but no end marker yet) so we never parse/finalize half a command.
-      const blockActive = ZSParse.hasOpenToolBlock(d.reply) && Date.now() - lastChangeAt < 6000;
+      const blockActive = AI2RobLoxParse.hasOpenToolBlock(d.reply) && Date.now() - lastChangeAt < 6000;
       // ...but once generation has clearly stopped (stop indicator gone past the
       // grace window), stop honoring an "open block" - it is DOM churn, not live
       // streaming. Lets a finished big block finalise in seconds instead of
@@ -539,7 +539,7 @@
       // here parsed the half-written JSON and stamped a false "bad JSON" error
       // while GLM was still typing. RESPONSE_TIMEOUT still bounds a truly stuck one.
       const stuckDone = started && d.reply && Date.now() - lastChangeAt > STABLE_MS &&
-        !(gen && ZSParse.hasOpenToolBlock(d.reply));
+        !(gen && AI2RobLoxParse.hasOpenToolBlock(d.reply));
       if ((gen || effectiveBlock) && !stuckDone) {
         // DIAG: attribute this wait. genOffFirstAt set ⇒ we are PAST first stop,
         // so any wait here is tail latency: either gen flickered back on, or an
@@ -624,8 +624,8 @@
       // delayed) and bound it with UNSETTLED_GRACE_MS. No-op on providers that
       // don't implement replyUnsettled (DeepSeek/Gemini/GLM/Kimi/Arena).
       const cmdShaped = P.replyUnsettled && (
-        ZSParse.hasToolSignature(r) ||
-        (ZSParse.LUA_END_RE.test(r) && !ZSParse.LUA_START_RE.test(r)) ||
+        AI2RobLoxParse.hasToolSignature(r) ||
+        (AI2RobLoxParse.LUA_END_RE.test(r) && !AI2RobLoxParse.LUA_START_RE.test(r)) ||
         (/"(?:datamodel_type|edits|old_string|new_string|file_path|target_file)"\s*:/.test(r) &&
           !/"command"\s*:/.test(r))
       );
@@ -653,14 +653,14 @@
         }
         await sleep(250); continue;                              // button not ready yet
       }
-      if (ZSParse.hasToolSignature(r)) {
-        const calls = ZSParse.parseToolCalls(r);
+      if (AI2RobLoxParse.hasToolSignature(r)) {
+        const calls = AI2RobLoxParse.parseToolCalls(r);
         if (calls.length) { finalizeDiag("tool"); return { kind: "tool", calls, item: d.item }; }
         // A half-written command + the site's "Continue" button means the command
         // was truncated mid-stream → resume it rather than reporting bad JSON.
         if (P.findContinueBtn()) return { kind: "truncated", text: r, item: d.item };
         // Only fire parse_error if explicit markers were present.
-        if (r.includes(ZSParse.START_M) || ZSParse.LUA_START_RE.test(r)) return { kind: "parse_error", reason: "malformed", raw: r, item: d.item };
+        if (r.includes(AI2RobLoxParse.START_M) || AI2RobLoxParse.LUA_START_RE.test(r)) return { kind: "parse_error", reason: "malformed", raw: r, item: d.item };
         // A command opener with no closer (a JSON object that never closed -
         // the model was halted mid-write and there is no Continue affordance):
         // ask the model to rewrite it instead of silently ending the turn.
@@ -672,8 +672,8 @@
         // still falls through to the parse_error feedback. Safe to run here:
         // generation has ended (the open-block branch above kept waiting
         // while it streamed).
-        if (ZSParse.hasOpenToolBlock(r)) {
-          const saved = ZSParse.salvageCutOff(r);
+        if (AI2RobLoxParse.hasOpenToolBlock(r)) {
+          const saved = AI2RobLoxParse.salvageCutOff(r);
           if (saved) {
             diag("tool.salvaged", { name: saved.tool });
             finalizeDiag("tool");
@@ -691,13 +691,13 @@
         // merely quotes {"command":"..."} (a DeepSeek-style explanation, or a
         // placeholder like "command_name") is NOT misread as a broken command and
         // looped on - only a real tool name means a genuine failed call.
-        const nm = ZSParse.toolNameFromText(r);
+        const nm = AI2RobLoxParse.toolNameFromText(r);
         if (nm && nm !== "command" && (A.toolNames.has(nm) || A.toolNames.has(bareToolName(nm)))) {
           return { kind: "parse_error", reason: "malformed", raw: r, item: d.item };
         }
       }
       // The model answered in its OWN native tool-call markup instead of a
-      // ZeroScript command - DeepSeek's DSML invoke/parameter tags (reported by
+      // AI2RobLox command - DeepSeek's DSML invoke/parameter tags (reported by
       // users, 2026-08; DeepSeek is the only provider seen doing it). It carries
       // no "command"/"tool" key and no ###...### markers, so hasToolSignature is
       // false and every guard below misses it too: the turn finalized as a
@@ -706,7 +706,7 @@
       // unambiguous - unlike the guards below it needs no known-tool gate, which
       // matters because the degenerate form seen in the wild carries no tool name
       // at all (a bare tool_calls opener followed by prose).
-      if (ZSParse.DSML_RE.test(r)) {
+      if (AI2RobLoxParse.DSML_RE.test(r)) {
         diag("cmd.dsml", { len: r.length });
         return { kind: "parse_error", reason: "dsml", raw: r, item: d.item };
       }
@@ -714,7 +714,7 @@
       // FORGOT the ###LUA### opener, so hasToolSignature missed it and the block
       // never ran (seen on Gemini). Don't silently treat it as a final answer -
       // nudge a rewrite instead of leaving the user stuck on a dead turn.
-      if (ZSParse.LUA_END_RE.test(r) && !ZSParse.LUA_START_RE.test(r) && !r.includes(ZSParse.START_M)) {
+      if (AI2RobLoxParse.LUA_END_RE.test(r) && !AI2RobLoxParse.LUA_START_RE.test(r) && !r.includes(AI2RobLoxParse.START_M)) {
         return { kind: "parse_error", reason: "luaOpener", raw: r, item: d.item };
       }
       // Malformed command: the model emitted a tool's RAW ARGUMENTS as a bare JSON
@@ -775,7 +775,7 @@
   // problems with opposite fixes: a bridge outage is fixed by start.bat and
   // resolves itself, while this one can ONLY be fixed by reloading the page and
   // never recovers on its own. Lumping them together (the old behaviour) told
-  // the model "the local ZeroScript bridge is unreachable", which sent the user
+  // the model "the local AI2RobLox bridge is unreachable", which sent the user
   // to check a bridge that was perfectly healthy. Diagnosed 2026-08-14 by the
   // giveaway timing: a genuine outage takes 8s (background.js `send` waits via
   // waitForConnection first), an invalidated context comes back in ~1ms.
@@ -837,7 +837,7 @@
 
   // ── Learned image tools (reload-proof "screen" chip) ──────────────────────
   // The known Roblox vision tool (screen_capture) is themed "screen" by name via
-  // ZS.toolCategory. A custom MCP tool's NAME reveals nothing, so we learn which
+  // AI2RobLox.toolCategory. A custom MCP tool's NAME reveals nothing, so we learn which
   // ones return images and persist that across reloads: with it, a revisited or
   // reloaded conversation still shows the image-capture chip (not the generic
   // wrench), and the NEXT call of a known image tool is optimistic from the start.
@@ -850,11 +850,11 @@
     if (!bare || A.imageTools.has(bare)) return;
     A.imageTools.add(bare);
     diag("imageTool.remember", { name: bare, total: A.imageTools.size });
-    try { chrome.storage.local.set({ zsImageTools: [...A.imageTools].slice(-200) }); } catch {}
+    try { chrome.storage.local.set({ ai2robloxImageTools: [...A.imageTools].slice(-200) }); } catch {}
   }
   try {
-    chrome.storage.local.get("zsImageTools", (r) => {
-      if (r && Array.isArray(r.zsImageTools)) for (const n of r.zsImageTools) A.imageTools.add(n);
+    chrome.storage.local.get("ai2robloxImageTools", (r) => {
+      if (r && Array.isArray(r.ai2robloxImageTools)) for (const n of r.ai2robloxImageTools) A.imageTools.add(n);
       diag("imageTool.loaded", { tools: [...A.imageTools] });
     });
   } catch {}
@@ -893,7 +893,7 @@
   async function runTool(call) {
     const name = call.tool;
     const args = call.arguments || {};
-    if (!name) return ZS.FEEDBACK.parseError("malformed");
+    if (!name) return AI2RobLox.FEEDBACK.parseError("malformed");
     // NEVER execute while the AI tab is backgrounded/minimized. This is the single
     // choke point for ALL execution (agentLoop's tool dispatch AND the bootstrap's
     // list_commands), so it closes the hole the loop-entry gate alone left open:
@@ -918,7 +918,7 @@
       }
       return `ERROR: the '${bareName}' command timed out and is unavailable in this environment. Do NOT call it again - complete the task yourself using the other commands (execute_luau, multi_edit, etc.).`;
     }
-    // Virtual command: list the MCP server(s) ZeroScript is currently connected
+    // Virtual command: list the MCP server(s) AI2RobLox is currently connected
     // to, with each one's REAL per-server health (from the bridge, never the
     // merged tool count - a dead server must not borrow another's numbers).
     if (name === "list_mcp_servers") {
@@ -1002,14 +1002,14 @@
         const paramLines = [compact.length ? `    ${compact.join(", ")}` : "", ...detailed].filter(Boolean).join("\n");
         // Tested usage note for the error-prone commands - kept full-length
         // (these are validated fixes for real bugs, not filler).
-        const note = ZS.TOOL_NOTES[bareToolName(t.name)];
+        const note = AI2RobLox.TOOL_NOTES[bareToolName(t.name)];
         const noteStr = note ? `\n    ⚠ ${note}` : "";
         return `${t.name}: ${(t.description || "").split("\n")[0]}${paramLines ? "\n" + paramLines : ""}${noteStr}`;
       });
       return `Output of '${name}':\n${requested} commands (${scoped.length}):\n\n${lines.join("\n\n")}`;
     }
     if (A.toolNames.size && !A.toolNames.has(name)) {
-      return ZS.FEEDBACK.unknownTool(name, [...A.toolNames]);
+      return AI2RobLox.FEEDBACK.unknownTool(name, [...A.toolNames]);
     }
     // The Roblox MCP REQUIRES datamodel_type on execute_luau (enum Edit/Client/
     // Server). The ###LUA### parser already fills it in, but the model may also
@@ -1038,7 +1038,7 @@
     let r = await Promise.race([bg({ type: "call_tool", name, arguments: args, timeout }), hardCap, stopWatch]);
     clearInterval(stopTimer);
     if (r && r.kind === "stopped") return "(stopped by user)";
-    if (!r) return ZS.FEEDBACK.bridgeOffline;
+    if (!r) return AI2RobLox.FEEDBACK.bridgeOffline;
     // The MCP server answers SUCCESSFULLY (ok:true) when no Studio is attached
     // (Studio closed / no place / MCP option disabled) - with an explanatory
     // text instead of a result. Surface it as a proper environment ERROR so the
@@ -1046,7 +1046,7 @@
     if (r.ok && /Unable to find an active Studio instance|previously active Studio has disconnected/i.test(r.text || "")) {
       ui.banner("warn", "Roblox Studio is not connected",
         "Open your place in Roblox Studio and enable the MCP server (Assistant AI → … → Manage MCP Servers → Enable Studio as MCP Server), then try again.");
-      return ZS.FEEDBACK.studioOffline;
+      return AI2RobLox.FEEDBACK.studioOffline;
     }
     // The Roblox MCP reports missing/invalid required parameters as a SUCCESS
     // whose text is just the complaint (e.g. "datamodel_type is required").
@@ -1075,7 +1075,7 @@
         return `ERROR: '${bareName}' returned an image, but this assistant cannot see images. Do NOT call it again. Use a different command to get the information as text instead.`;
       }
       if (r.images && r.images.length) {
-        // Show the capture in a left-hand ZeroScript popup (from the in-memory
+        // Show the capture in a left-hand AI2RobLox popup (from the in-memory
         // base64 - simple and reliable on every site; no DOM-embedded preview).
         ui.showImages(r.images, name);
         // Do NOT attach the image here: submitAndGetBase/typeAndSend types the
@@ -1101,13 +1101,13 @@
     // that instead of blaming the bridge (see bg / isContextInvalidated).
     if (r.kind === "stale-extension") {
       ui.banner("warn", "Reload this page",
-        "ZeroScript was updated or reloaded while this tab was open, so this page is running an " +
+        "AI2RobLox was updated or reloaded while this tab was open, so this page is running an " +
         "old copy of it and commands can no longer run. Reload the page (F5) to reconnect - your " +
         "bridge and Roblox Studio are unaffected.");
       diag("bridge.staleExtension", { name, error: r.error });
-      return ZS.FEEDBACK.staleExtension;
+      return AI2RobLox.FEEDBACK.staleExtension;
     }
-    if (r.kind === "disconnected") return ZS.FEEDBACK.bridgeOffline;
+    if (r.kind === "disconnected") return AI2RobLox.FEEDBACK.bridgeOffline;
     if (r.kind === "timeout") {
       return `ERROR: tool '${name}' timed out after ${name === "execute_luau" ? 20 : 120}s.\n${r.error}\nTry a shorter/simpler call or check that Roblox Studio is open and responsive.`;
     }
@@ -1312,7 +1312,7 @@
             }
             diag("truncated.sendFallback");
             ui.toast("Reply was cut off, resuming…");
-            base = await submitAndGetBase(ZS.FEEDBACK.truncated);
+            base = await submitAndGetBase(AI2RobLox.FEEDBACK.truncated);
             continue;
           }
           if (res.text) break; // give up resuming; keep what we have as the answer
@@ -1328,7 +1328,7 @@
           // stamps on any command-shaped turn once generation ends - the misleading
           // "chip says OK, result says error" state seen live on GLM's truncated
           // execute_blender_code).
-          const failName = ZSParse.toolNameFromText(res.raw || "") || "command";
+          const failName = AI2RobLoxParse.toolNameFromText(res.raw || "") || "command";
           if (res.item) {
             const detail = res.reason === "unclosed" ? "cut off"
               : res.reason === "luaOpener" ? "missing ###LUA###"
@@ -1338,12 +1338,12 @@
               // report) looking for a syntax slip that does not exist.
               : res.reason === "dsml" ? "wrong format"
               : "bad JSON";
-            decorate.toolBox(res.item, failName, "err", detail, true, "", ZS.toolCategory(failName));
+            decorate.toolBox(res.item, failName, "err", detail, true, "", AI2RobLox.toolCategory(failName));
           }
           // Pass the detected command name so the feedback only offers the
           // ###LUA### block when it actually applies (execute_luau) - never for a
           // truncated/broken execute_blender_code or other JSON-only command.
-          base = await submitAndGetBase(ZS.FEEDBACK.parseError(res.reason, failName));
+          base = await submitAndGetBase(AI2RobLox.FEEDBACK.parseError(res.reason, failName));
           continue;
         }
         if (res.kind === "text") break; // final answer
@@ -1351,7 +1351,7 @@
         if (res.kind === "tool") {
           const calls = res.calls;
           if (calls.length > 1) {
-            base = await submitAndGetBase(ZS.FEEDBACK.multiTool(calls.map((c) => c.tool || "?")));
+            base = await submitAndGetBase(AI2RobLox.FEEDBACK.multiTool(calls.map((c) => c.tool || "?")));
             continue;
           }
           const call = calls[0];
@@ -1360,7 +1360,7 @@
           // even though its name alone wouldn't reveal it. First-ever call of an
           // unknown image tool stays generic here and upgrades at result time below.
           const learnedImg = A.imageTools.has(bareToolName(call.tool));
-          const category = learnedImg ? "screen" : ZS.toolCategory(call.tool);
+          const category = learnedImg ? "screen" : AI2RobLox.toolCategory(call.tool);
           diag("tool.runCat", { name: call.tool, learnedImg, category });
 
           // Park BEFORE painting the chip / stamping the clock / marking the turn
@@ -1368,7 +1368,7 @@
           // that also covers the bootstrap), but parking only there would leave
           // this block's side effects applied for the whole minimize:
           //   - the chip spins "running" while nothing actually runs, and
-          //     elapsedOn(zsToolT0) counts the parked time, so a 20-min minimize
+          //     elapsedOn(ai2robloxToolT0) counts the parked time, so a 20-min minimize
           //     renders a bogus "1200.0s" on the call;
           //   - rememberExecuted() would mark the turn dispatched before it ever
           //     ran, so a reload/close while parked loses the command for good -
@@ -1389,7 +1389,7 @@
           A.toolArg = argSummary(call);
           // Record this turn as dispatched OFF the DOM so the auto-resume
           // watchdog never re-fires it after a scroll re-render wipes the node's
-          // zloop/zResume markers (see the `executed` map).
+          // ai2robloxLoop/ai2robloxResume markers (see the `executed` map).
           rememberExecuted(res.item);
           diag("tool.start", { name: call.tool });
           const feedback = await runTool(call);
@@ -1400,7 +1400,7 @@
             // stuck loading forever, and MARK the turn so the sweep classifier
             // never repaints it ✓ done once generation ends (the real cause of a
             // stopped call still going green a moment later).
-            if (res.item) { res.item.dataset.zStopped = "1"; rememberHalted(res.item); }
+            if (res.item) { res.item.dataset.ai2robloxStopped = "1"; rememberHalted(res.item); }
             decorate.toolBox(res.item, call.tool, "err", "stopped", true, "", category);
             break;
           }
@@ -1428,7 +1428,7 @@
             true, outBody, resultCat);
           // Snapshot the settled outcome. If the site swaps this turn's DOM node
           // while we wait for the model's next turn (wiping the chip AND the
-          // zloop ownership dataset), the sweep re-owns the fresh node with this
+          // ai2robloxLoop ownership dataset), the sweep re-owns the fresh node with this
           // outcome instead of letting branch-3 classification re-spin a "run"
           // chip on an already-executed call.
           A.toolSettle = {
@@ -1461,7 +1461,7 @@
               // needs the primary Roblox set; addon commands were listed on demand
               // and the bridge routes by name regardless.
               const roblox = A.toolList.filter((t) => (t.server || "roblox") === "roblox");
-              toSend += ZS.toolsReminder(roblox) + "\n" + ZS.memoryNudge();
+              toSend += AI2RobLox.toolsReminder(roblox) + "\n" + AI2RobLox.memoryNudge();
               diag("tools.reminder", { after: REMIND_TOOLS_EVERY });
             }
           }
@@ -1510,7 +1510,7 @@
   //
   // The dataset marker alone is NOT enough: sites re-render the whole history
   // when the next user message lands (seen live on DeepSeek), replacing the
-  // halted turn's node and wiping dataset.zStopped - and since a fresh user
+  // halted turn's node and wiping dataset.ai2robloxStopped - and since a fresh user
   // message also clears the A.userStopped latch by design, nothing said
   // "stopped" anymore and the chip went ✓ green. So halted turns are ALSO
   // remembered here, keyed independently of the DOM node (conversation +
@@ -1560,13 +1560,13 @@
   function markStoppedTurn() {
     const it = P.lastAssistant();
     if (!it) return;
-    it.dataset.zStopped = "1";
+    it.dataset.ai2robloxStopped = "1";
     rememberHalted(it);
   }
 
   // Off-DOM record of assistant turns whose command has ALREADY been dispatched
   // (by the normal loop OR the auto-resume watchdog). The dataset markers that
-  // dedupe re-execution (zResume / zloop) live on the DOM NODE - but sites
+  // dedupe re-execution (ai2robloxResume / ai2robloxLoop) live on the DOM NODE - but sites
   // virtualize long conversations, so scrolling up DESTROYS and RECREATES a
   // turn's node, wiping those markers. The fresh node then looks un-run, and the
   // watchdog can re-fire the turn's tool with no live generation at all (the
@@ -1622,9 +1622,9 @@
     // seconds after the user pressed Stop. Settle it to the stopped state right
     // now; the loop's own settle on resolve is idempotent.
     if (A.toolRunning && A.toolItem) {
-      A.toolItem.dataset.zStopped = "1";
+      A.toolItem.dataset.ai2robloxStopped = "1";
       rememberHalted(A.toolItem);
-      decorate.toolBox(A.toolItem, A.toolName, "err", "stopped", true, "", ZS.toolCategory(A.toolName));
+      decorate.toolBox(A.toolItem, A.toolName, "err", "stopped", true, "", AI2RobLox.toolCategory(A.toolName));
     }
     ui.markStopping();    // instant feedback: button → "⏳ Stopping…", disabled
     P.stopGeneration();
@@ -1635,7 +1635,7 @@
   // definition, used both by the bootstrap and by the periodic re-injection, so
   // the two can never drift apart.
   function systemPrompt() {
-    return ZS.buildSystemPrompt({
+    return AI2RobLox.buildSystemPrompt({
       siteName: P.displayName,
       customPrompt: ui.getCustomPrompt(),
       providerNotes: P.promptExtra || "",
@@ -1680,7 +1680,7 @@
   // virtualization cannot erase it. The DOM walk is kept as a floor, since a
   // conversation that visibly shows the threshold is due no matter what storage
   // says (e.g. a session adopted from another device, or storage cleared).
-  const sysKey = () => `zsSys:${P.conversationKey() || "new"}`;
+  const sysKey = () => `ai2robloxSys:${P.conversationKey() || "new"}`;
   let sysCount = { users: 0, results: 0 };
   let sysCountKey = "";
 
@@ -1729,12 +1729,12 @@
     let users = 0, results = 0;
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
-      const txt = P.classifyText(it, ".zs-chip");
+      const txt = P.classifyText(it, ".ai2roblox-chip");
       // The bootstrap turn and every rider both carry the marker - either one
       // means the rules were fully stated here, so stop counting.
-      if (txt.includes(ZS.SYS_MARKER)) break;
+      if (txt.includes(AI2RobLox.SYS_MARKER)) break;
       if (!P.isUserItem(it)) continue;
-      if (ZSParse.isInjectedFeedback(txt)) results++;
+      if (AI2RobLoxParse.isInjectedFeedback(txt)) results++;
       else users++;
     }
     return { users, results };
@@ -1781,11 +1781,11 @@
     const prompt = systemPrompt();
     const rider =
       "\n\n────────────────────────────────\n" +
-      ZS.RESEND_MARKER + "\n" +
-      "(System note from ZeroScript - an automatic re-statement of your operating " +
+      AI2RobLox.RESEND_MARKER + "\n" +
+      "(System note from AI2RobLox - an automatic re-statement of your operating " +
       "instructions, NOT a new request and NOT something to reply to. This conversation " +
       "may have been summarised, which drops the part explaining how you actually run " +
-      "commands. To be explicit: the ZeroScript extension IS running in this page right " +
+      "commands. To be explicit: the AI2RobLox extension IS running in this page right " +
       "now, it DOES read your replies, and the commands below DO execute for real - the " +
       "results you have been receiving are proof of it. Keep using them exactly as " +
       "described. Just carry on with the task; do not acknowledge this note.)\n" +
@@ -1927,7 +1927,7 @@
     error:   SVG('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
     gear:    SVG('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15H4.5a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 11 4.6h.09A1.65 1.65 0 0 0 12 3.09 2 2 0 0 1 16 3v.09A1.65 1.65 0 0 0 19 4.6l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 21.4 11h.1a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.5 1z"/>'),
   };
-  const SPIN = '<span class="zs-spin"></span>';
+  const SPIN = '<span class="ai2roblox-spin"></span>';
 
   function iconFor(category, phase) {
     if (phase === "run") return SPIN;
@@ -1948,17 +1948,17 @@
   // virtualize (recycle) turn nodes: a node that was a command/result card can
   // be reused to render unrelated text.
   function resetDecoration(item) {
-    const chip = item.querySelector(".zs-chip");
+    const chip = item.querySelector(".ai2roblox-chip");
     if (chip) chip.remove();
-    item.classList.remove("zs-hidden");
-    item.querySelectorAll(".zs-tool-hide").forEach((e) => e.classList.remove("zs-tool-hide"));
-    item.querySelectorAll(".zs-cmd-mask").forEach((e) => e.classList.remove("zs-cmd-mask"));
-    delete item.dataset.zs;
-    delete item.dataset.zsig;
-    delete item.dataset.zphase;
-    delete item.dataset.zStopped;
-    delete item.dataset.zRegenLen;
-    delete item.dataset.zRegenAt;
+    item.classList.remove("ai2roblox-hidden");
+    item.querySelectorAll(".ai2roblox-tool-hide").forEach((e) => e.classList.remove("ai2roblox-tool-hide"));
+    item.querySelectorAll(".ai2roblox-cmd-mask").forEach((e) => e.classList.remove("ai2roblox-cmd-mask"));
+    delete item.dataset.ai2roblox;
+    delete item.dataset.ai2robloxSig;
+    delete item.dataset.ai2robloxPhase;
+    delete item.dataset.ai2robloxStopped;
+    delete item.dataset.ai2robloxRegenLen;
+    delete item.dataset.ai2robloxRegenAt;
     delete item.__zsChip;
   }
 
@@ -1966,12 +1966,12 @@
     // Core renderer. opts: {label, detail, body, category, phase, cls, whole}
     chip(item, opts) {
       const { label, detail = "", body = "", category = "tool", phase, cls, whole } = opts;
-      let chip = item.querySelector(".zs-chip");
+      let chip = item.querySelector(".ai2roblox-chip");
       const hasBody = !!body;
       // While a command streams, the site re-renders the raw block on every token
       // and we get called on nearly every sweep. If what we'd draw is identical,
       // we must NOT rebuild the chip's innerHTML: doing so re-creates the
-      // <span class="zs-spin"> and restarts its CSS animation each time, so the
+      // <span class="ai2roblox-spin"> and restarts its CSS animation each time, so the
       // spinner looks frozen / stutters ("retry en rafale"). Rebuild the inner
       // markup ONLY when the rendered content actually changes; otherwise reuse
       // the existing element (and keep its expand/collapse state) so the spinner
@@ -1980,20 +1980,20 @@
       if (!chip) chip = document.createElement("div");
       if (chip.dataset.csig !== sig) {
         chip.dataset.csig = sig;
-        chip.className = `zs-chip cat-${category} ${cls || ""}`;
+        chip.className = `ai2roblox-chip cat-${category} ${cls || ""}`;
         chip.innerHTML =
-          `<div class="zs-chip-head">` +
-            `<span class="zs-chip-ic">${iconFor(category, phase)}</span>` +
-            `<span class="zs-chip-tx"></span>` +
-            `<span class="zs-chip-dt"></span>` +
-            (hasBody ? `<span class="zs-chip-cv">${SVG('<polyline points="6 9 12 15 18 9"/>')}</span>` : "") +
+          `<div class="ai2roblox-chip-head">` +
+            `<span class="ai2roblox-chip-ic">${iconFor(category, phase)}</span>` +
+            `<span class="ai2roblox-chip-tx"></span>` +
+            `<span class="ai2roblox-chip-dt"></span>` +
+            (hasBody ? `<span class="ai2roblox-chip-cv">${SVG('<polyline points="6 9 12 15 18 9"/>')}</span>` : "") +
           `</div>` +
-          (hasBody ? `<div class="zs-chip-body"><pre></pre></div>` : "");
-        chip.querySelector(".zs-chip-tx").textContent = label;
-        if (detail) chip.querySelector(".zs-chip-dt").textContent = detail;
+          (hasBody ? `<div class="ai2roblox-chip-body"><pre></pre></div>` : "");
+        chip.querySelector(".ai2roblox-chip-tx").textContent = label;
+        if (detail) chip.querySelector(".ai2roblox-chip-dt").textContent = detail;
         if (hasBody) {
-          chip.querySelector(".zs-chip-body pre").textContent = body;
-          const head = chip.querySelector(".zs-chip-head");
+          chip.querySelector(".ai2roblox-chip-body pre").textContent = body;
+          const head = chip.querySelector(".ai2roblox-chip-head");
           head.style.cursor = "pointer";
           head.onclick = () => chip.classList.toggle("open");
         }
@@ -2002,10 +2002,10 @@
       if (whole) {
         // Fully injected turn (result / sys) → hide the whole item.
         if (chip.parentElement !== item) item.insertBefore(chip, item.firstChild);
-        item.classList.add("zs-hidden");
+        item.classList.add("ai2roblox-hidden");
       } else {
-        item.classList.remove("zs-hidden");
-        // findToolBlockSpot ALSO applies the .zs-tool-hide classes (its real job);
+        item.classList.remove("ai2roblox-hidden");
+        // findToolBlockSpot ALSO applies the .ai2roblox-tool-hide classes (its real job);
         // we call it for that even when we don't use its returned position.
         const spot = P.findToolBlockSpot(item, chip);
         if (P.chipAtItemLevel) {
@@ -2041,7 +2041,7 @@
           item.insertBefore(chip, item.firstChild);
         }
       }
-      item.dataset.zs = cls || "1";
+      item.dataset.ai2roblox = cls || "1";
       // Remember the exact opts so a chip wiped by a site re-render can be
       // rebuilt identically (see ensureOwnedChip / the chipGone guards).
       item.__zsChip = { ...opts };
@@ -2049,12 +2049,12 @@
     },
 
     // Re-apply a loop-owned chip after a site re-render wiped it (chip removed
-    // and/or the .zs-tool-hide classes stripped). The loop owns the label/phase,
+    // and/or the .ai2roblox-tool-hide classes stripped). The loop owns the label/phase,
     // so we rebuild from the stored opts rather than re-running classification.
     ensureOwnedChip(item) {
       const opts = item.__zsChip;
       if (!opts) return;
-      const chipEl = item.querySelector(".zs-chip");
+      const chipEl = item.querySelector(".ai2roblox-chip");
       const chipGone = !chipEl;
       let rawVisible = false;
       if (!opts.whole) {
@@ -2063,17 +2063,17 @@
         // (by design) - counting those as "raw block visible" made this
         // rebuild fire on EVERY sweep forever (60Hz spam, seen live).
         rawVisible = [...item.querySelectorAll("pre, p, [class*='code'], .cm-line")].some(
-          (e) => !e.closest(".zs-tool-hide") && !e.closest(".zs-chip") &&
+          (e) => !e.closest(".ai2roblox-tool-hide") && !e.closest(".ai2roblox-chip") &&
                  !(P.thinkingSel && e.closest(P.thinkingSel)) &&
                  // Some sites (Arena) wrap a code block in a bare outer <pre>
                  // that has no hide class of its own - the real content (and
-                 // the .zs-tool-hide class) live on a child wrapper instead.
+                 // the .ai2roblox-tool-hide class) live on a child wrapper instead.
                  // closest() only checks ancestors, so without this the outer
                  // <pre> reads as "raw command visible" FOREVER (its own
                  // textContent includes the hidden child's text), causing an
                  // infinite rebuild loop (~60/s, seen live on Arena).
-                 !e.querySelector(".zs-tool-hide") &&
-                 ZSParse.hasCommandShape(e.textContent || ""));
+                 !e.querySelector(".ai2roblox-tool-hide") &&
+                 AI2RobLoxParse.hasCommandShape(e.textContent || ""));
       }
       // A provider opted into `chipAppend` (chip trails the reply text instead
       // of pinning first) has no equivalent of firstChild's immunity to churn:
@@ -2099,39 +2099,39 @@
       if (!item) return;
       // Tracker: every phase TRANSITION of a command chip, with who drove it.
       // "loop" = the agentic loop (authoritative), "sweep" = DOM classification.
-      if (item.dataset.zphase !== phase) {
+      if (item.dataset.ai2robloxPhase !== phase) {
         diag("chip.phase", {
-          name, from: item.dataset.zphase || "(new)", to: phase,
+          name, from: item.dataset.ai2robloxPhase || "(new)", to: phase,
           by: owned ? "loop" : "sweep", detail: detail || "",
         });
       }
       const cls = phase === "run" ? "run" : phase === "err" ? "err" : phase === "idle" ? "idle" : "done";
       this.chip(item, {
         label: name, detail: detail || "", body: body || "",
-        category: category || ZS.toolCategory(name), phase, cls,
+        category: category || AI2RobLox.toolCategory(name), phase, cls,
       });
-      item.dataset.zphase = phase;
-      if (owned) item.dataset.zloop = "1";
+      item.dataset.ai2robloxPhase = phase;
+      if (owned) item.dataset.ai2robloxLoop = "1";
     },
 
     classify(item, next) {
-      if (item.dataset.zloop) { this.ensureOwnedChip(item); return; } // loop owns it
-      const txt = P.classifyText(item, ".zs-chip"); // excludes thinking AND our chip
+      if (item.dataset.ai2robloxLoop) { this.ensureOwnedChip(item); return; } // loop owns it
+      const txt = P.classifyText(item, ".ai2roblox-chip"); // excludes thinking AND our chip
 
       // NOTE on the "needs re-apply" guards below: some sites (Gemini/Angular)
       // re-render a turn's CHILDREN on every update - our chip and the
-      // .zs-tool-hide classes are wiped while the dataset flags on the turn
+      // .ai2roblox-tool-hide classes are wiped while the dataset flags on the turn
       // element itself survive. So "already decorated" must always be
       // double-checked against the chip actually being present in the DOM.
-      const chipGone = !item.querySelector(".zs-chip");
+      const chipGone = !item.querySelector(".ai2roblox-chip");
 
       // 1a. A mid-session RE-STATEMENT of the system prompt. Checked before the
       //     bootstrap branch because it carries SYS_MARKER too (that marker is
       //     what hides it), and without this it inherited the bootstrap's
       //     "Starting Up" gear - which reads as if the agent restarted, exactly
       //     the confusion Seb reported. Never animated: nothing is starting.
-      if (txt.includes(ZS.RESEND_MARKER)) {
-        if (item.dataset.zs !== "resend" || chipGone) {
+      if (txt.includes(AI2RobLox.RESEND_MARKER)) {
+        if (item.dataset.ai2roblox !== "resend" || chipGone) {
           // The rider travels ON a tool result, so this one turn is both things.
           // Name the tool in the detail rather than dropping it - otherwise that
           // result is the only one in the conversation with no visible outcome.
@@ -2141,25 +2141,25 @@
             detail: m ? `with ${m[1]} result` : "",
             category: "remind", phase: "remind", cls: "sys", whole: true,
           });
-          item.dataset.zs = "resend";
-          item.dataset.zphase = "remind";
+          item.dataset.ai2roblox = "resend";
+          item.dataset.ai2robloxPhase = "remind";
         }
         return;
       }
 
       // 1. System-prompt bootstrap turn → animated while starting, gear when done.
-      if (txt.includes(ZS.SYS_MARKER)) {
+      if (txt.includes(AI2RobLox.SYS_MARKER)) {
         const phase = A.starting ? "run" : "sys";
-        if (item.dataset.zs !== "sys" || item.dataset.zphase !== phase || chipGone) {
+        if (item.dataset.ai2roblox !== "sys" || item.dataset.ai2robloxPhase !== phase || chipGone) {
           this.chip(item, { label: "Starting Up", category: "tool", phase, cls: "sys", whole: true });
-          item.dataset.zphase = phase;
+          item.dataset.ai2robloxPhase = phase;
         }
         return;
       }
 
       // 2. Injected result / ERROR / note turns. ALWAYS a user turn we sent,
       //    keyed off our fixed output shapes (never command keywords).
-      if (P.isUserItem(item) && ZSParse.isInjectedFeedback(txt)) {
+      if (P.isUserItem(item) && AI2RobLoxParse.isInjectedFeedback(txt)) {
         const m = txt.match(/Output of '([^']+)'/);
         const isErr = /^\s*ERROR\b/.test(txt);
         // Reload-proof image detection: a feedback carrying an image ends with the
@@ -2168,35 +2168,35 @@
         const hasImg = !isErr && IMAGE_FEEDBACK_RE.test(txt);
         if (hasImg && m) rememberImageTool(m[1]);
         const sig = (m ? m[1] : "note") + "|" + (isErr ? "err" : hasImg ? "img" : "result");
-        if (item.dataset.zsig !== sig || !item.classList.contains("zs-hidden") || chipGone) {
+        if (item.dataset.ai2robloxSig !== sig || !item.classList.contains("ai2roblox-hidden") || chipGone) {
           this.chip(item, {
             label: m ? `${m[1]} · result` : "result",
-            category: hasImg ? "screen" : m ? ZS.toolCategory(m[1]) : "tool",
+            category: hasImg ? "screen" : m ? AI2RobLox.toolCategory(m[1]) : "tool",
             body: txt, phase: isErr ? "err" : "result",
             cls: isErr ? "err" : "result", whole: true,
           });
-          item.dataset.zsig = sig;
+          item.dataset.ai2robloxSig = sig;
         }
         return;
       }
 
       // 2b. FALLBACK for a command turn whose raw tool-call text is no longer
       // readable (e.g. Qwen disposes/never fully renders an off-screen Monaco
-      // code block on a COLD page load - the dataset.zsCode cache only helps
+      // code block on a COLD page load - the dataset.ai2robloxCode cache only helps
       // WITHIN a session, since it needs to observe the block live to capture
       // it before disposal; reported live: every past tool-call chip vanished
       // after a page reload, leaving only its "· result" box). The turn's own
       // text no longer "looks like" a command, but the VERY NEXT turn being
       // our injected result (`Output of 'name'`) is definitive proof it WAS
       // one - settle it from that evidence instead of leaving the chip gone.
-      if (P.isAssistantItem(item) && !ZSParse.hasCommandShape(txt) &&
+      if (P.isAssistantItem(item) && !AI2RobLoxParse.hasCommandShape(txt) &&
           next && P.isUserItem(next)) {
-        const nt = P.classifyText(next, ".zs-chip");
+        const nt = P.classifyText(next, ".ai2roblox-chip");
         const m = nt.match(/^\s*Output of '([^']+)'/);
         if (m) {
           const isErr = /^\s*ERROR\b/.test(nt);
           const phase = isErr ? "err" : "done";
-          if (item.dataset.zphase !== phase || chipGone) {
+          if (item.dataset.ai2robloxPhase !== phase || chipGone) {
             this.toolBox(item, m[1], phase, "", false);
           }
           return;
@@ -2204,34 +2204,34 @@
       }
 
       // 3. Assistant command turns → live loading while streaming, ✓ when done.
-      // ONLY in a real ZeroScript session (started or bootstrapping). Without
+      // ONLY in a real AI2RobLox session (started or bootstrapping). Without
       // this gate, a plain never-started chat where the model merely EXPLAINS
       // the command format (a {"command":...} example in its answer) got the
       // example MASKED behind a tool chip - hiding genuine content the user
       // asked for. Same principle as domHasZsSignal: a command shape alone is
       // not proof of a session. (Branches 1/2 above key off OUR OWN injected
       // markers, which only exist in real sessions, so they need no gate.)
-      if (P.isAssistantItem(item) && ZSParse.hasCommandShape(txt) &&
+      if (P.isAssistantItem(item) && AI2RobLoxParse.hasCommandShape(txt) &&
           (A.started || A.starting)) {
-        // Regenerate transition (see zRegenLen capture in regenResume): the site is
+        // Regenerate transition (see ai2robloxRegenLen capture in regenResume): the site is
         // still showing the OLD command text after a post-stop regenerate, before it
         // wipes and re-streams. Keep the coherent red "stopped" look instead of
         // re-animating the stale old call as a fresh "run" spinner. Clears the moment
         // the content is actually replaced (stream length drops below the captured
         // baseline) or a short safety window elapses, after which normal
         // classification paints the freshly regenerated command.
-        if (item.dataset.zRegenLen) {
-          const baseLen = Number(item.dataset.zRegenLen);
-          const armedAt = Number(item.dataset.zRegenAt || 0);
+        if (item.dataset.ai2robloxRegenLen) {
+          const baseLen = Number(item.dataset.ai2robloxRegenLen);
+          const armedAt = Number(item.dataset.ai2robloxRegenAt || 0);
           const replaced = txt.length < baseLen - 8;      // old content wiped
           const expired = Date.now() - armedAt > 6000;    // safety fallback
           if (!replaced && !expired) {
-            const nm = ZSParse.toolNameFromText(txt) || "command";
+            const nm = AI2RobLoxParse.toolNameFromText(txt) || "command";
             this.toolBox(item, nm, "err", "stopped", false);
             return;
           }
-          delete item.dataset.zRegenLen;
-          delete item.dataset.zRegenAt;
+          delete item.dataset.ai2robloxRegenLen;
+          delete item.dataset.ai2robloxRegenAt;
         }
         // A turn the user manually halted (Stop / native stop) stays "stopped" -
         // never let this sweep repaint it ✓ done (or worse, re-spin it) just
@@ -2253,21 +2253,21 @@
           (item === P.lastAssistant() && P.isGenerating()) ||
           (A.running && A.toolItem === item)
         );
-        if (regenerating) { delete item.dataset.zStopped; forgetHalted(item); }
+        if (regenerating) { delete item.dataset.ai2robloxStopped; forgetHalted(item); }
         const stopped = !regenerating && (
-          item.dataset.zStopped === "1" ||
+          item.dataset.ai2robloxStopped === "1" ||
           (A.userStopped && item === P.lastAssistant()) ||
           isRememberedHalted(item, txt));
         // Self-heal: a site re-render that swapped this turn's node wiped the
         // dataset marker - re-stamp it so the stop survives the next wipe of
         // the A.userStopped latch (a fresh user message clears it by design).
-        if (stopped && item.dataset.zStopped !== "1") {
-          item.dataset.zStopped = "1";
-          diag("chip.rehalt", { name: ZSParse.toolNameFromText(txt) });
+        if (stopped && item.dataset.ai2robloxStopped !== "1") {
+          item.dataset.ai2robloxStopped = "1";
+          diag("chip.rehalt", { name: AI2RobLoxParse.toolNameFromText(txt) });
         }
         // The loop already SETTLED this very call (tool finished, we're waiting
         // for the model's next turn) but the site swapped the turn's DOM node,
-        // wiping the chip, the zloop ownership AND the __zsChip opts. Without
+        // wiping the chip, the ai2robloxLoop ownership AND the __zsChip opts. Without
         // this, the fresh node re-classifies as a spinning "run" chip (A.running
         // is still true) on an already-executed call. Re-own it with the settled
         // outcome. The count guard skips this once the model's NEXT turn exists,
@@ -2282,7 +2282,7 @@
               ? P.lastAssistantId() === A.toolSettle.id
               : A.toolSettle.count === P.assistantCount()) &&
             item === P.lastAssistant() &&
-            ZSParse.toolNameFromText(txt) === A.toolName) {
+            AI2RobLoxParse.toolNameFromText(txt) === A.toolName) {
           diag("chip.reown", { name: A.toolName, phase: A.toolSettle.phase });
           this.toolBox(item, A.toolName, A.toolSettle.phase, A.toolSettle.detail,
             true, A.toolSettle.body, A.toolSettle.category);
@@ -2303,7 +2303,7 @@
         //    below it, so it settles to "done" instead of every old chip re-loading
         //    to a blue spinner (the Arena "all chips restarted loading" report).
         const resultAfter = next && P.isUserItem(next) &&
-          ZSParse.isInjectedFeedback(P.classifyText(next, ".zs-chip"));
+          AI2RobLoxParse.isInjectedFeedback(P.classifyText(next, ".ai2roblox-chip"));
         const inFlight = (A.running || A.starting) && !resultAfter;
         // Regenerate grace: keep the freshly-regenerated command turn "run" in the
         // gap between regenResume clearing the stop latch and the watchdog starting
@@ -2327,7 +2327,7 @@
         // injected result below it, and not in the off-DOM executed memory (the
         // memory keeps this virtualization-safe - a scrolled-back turn whose result
         // detached is still known-executed and never mislabelled).
-        const neverRun = !item.dataset.zloop && !resultAfter &&
+        const neverRun = !item.dataset.ai2robloxLoop && !resultAfter &&
           !isRememberedExecuted(item, txt);
         // Superseded orphan: abandoned command - a NEWER assistant turn exists below
         // it yet it never ran (e.g. stopped then regenerated into a fresh turn on
@@ -2373,7 +2373,7 @@
         // moment generation ends. When our error result lands below, the
         // error-aware settle just below is skipped (phase is no longer "done") so
         // the more precise "bad format" wording survives.
-        if (!stopped && !live && phase !== "err" && ZSParse.DSML_RE.test(txt)) {
+        if (!stopped && !live && phase !== "err" && AI2RobLoxParse.DSML_RE.test(txt)) {
           phase = "err"; detail = "wrong format";
         }
         // Error-aware settle: a command whose injected result RIGHT BELOW is an
@@ -2382,14 +2382,14 @@
         // dropped ownership) re-derives the phase here - from the conversation
         // itself, so it stays correct without any loop state.
         if (phase === "done" && next && P.isUserItem(next)) {
-          const nt = P.classifyText(next, ".zs-chip");
+          const nt = P.classifyText(next, ".ai2roblox-chip");
           // feedbackIsError also catches an MCP tool's in-body error (the result
           // reads "Output of '…': Error executing code…", which our ERROR prefix
           // test would miss - the Blender case), so a revisited conversation
           // re-settles it red, matching what the loop painted live.
-          if (ZSParse.isInjectedFeedback(nt) && feedbackIsError(nt)) {
+          if (AI2RobLoxParse.isInjectedFeedback(nt) && feedbackIsError(nt)) {
             phase = "err"; detail = "error";
-            if (item.dataset.zphase !== "err") diag("chip.errSettle", { name: ZSParse.toolNameFromText(txt) });
+            if (item.dataset.ai2robloxPhase !== "err") diag("chip.errSettle", { name: AI2RobLoxParse.toolNameFromText(txt) });
           }
         }
         // A command block that is VISIBLE right now (its hide classes live on
@@ -2401,26 +2401,26 @@
         // done→run→done with the generation flicker (seen live as a settled
         // green chip blinking back to a blue spinner).
         const rawVisible = [...item.querySelectorAll("pre, p, [class*='code'], .cm-line")].some(
-          (e) => !e.classList.contains("zs-tool-hide") && !e.closest(".zs-tool-hide") &&
-                 !e.closest(".zs-chip") && !(P.thinkingSel && e.closest(P.thinkingSel)) &&
+          (e) => !e.classList.contains("ai2roblox-tool-hide") && !e.closest(".ai2roblox-tool-hide") &&
+                 !e.closest(".ai2roblox-chip") && !(P.thinkingSel && e.closest(P.thinkingSel)) &&
                  // see ensureOwnedChip's matching guard: a bare outer <pre>
                  // wrapping a hidden child wrapper otherwise reads as visible
                  // forever (Arena code-block markup).
-                 !e.querySelector(".zs-tool-hide") &&
-                 ZSParse.hasCommandShape(e.textContent || ""));
+                 !e.querySelector(".ai2roblox-tool-hide") &&
+                 AI2RobLoxParse.hasCommandShape(e.textContent || ""));
         // A tool learned to return images gets the "screen" chip even though its
         // name alone wouldn't reveal it (parity with Roblox screen_capture). The
         // fact can land AFTER this turn first settled (imageTools loads from
         // storage async, or the result turn below is classified later the same
         // pass), so repaint when the current chip's category is stale too - the
         // phase-only guard would otherwise freeze it on the generic wrench.
-        const nm = ZSParse.toolNameFromText(txt);
+        const nm = AI2RobLoxParse.toolNameFromText(txt);
         const cat = A.imageTools.has(bareToolName(nm)) ? "screen" : undefined;
-        const chipNow = item.querySelector(".zs-chip");
+        const chipNow = item.querySelector(".ai2roblox-chip");
         const catStale = cat === "screen" && chipNow && !chipNow.classList.contains("cat-screen");
         // Chip drift for chipAppend providers (Kimi): the RUN chip is painted by
-        // the SWEEP (owned=false, no zloop) until the loop takes over at
-        // tool.start ~2s later, so ensureOwnedChip's drift fix (zloop-only) does
+        // the SWEEP (owned=false, no ai2robloxLoop) until the loop takes over at
+        // tool.start ~2s later, so ensureOwnedChip's drift fix (ai2robloxLoop-only) does
         // NOT run during that window. Meanwhile Vue mounts the copy/regenerate
         // toolbar (chipTrailRef) and inserts it ABOVE our chip node, flashing the
         // action buttons over the chip until something repaints it. Detect that
@@ -2432,10 +2432,10 @@
           const trailRef = P.chipTrailRef ? P.chipTrailRef(item) : null;
           drifted = chipNow.parentElement === anchor && chipNow.nextElementSibling !== trailRef;
         }
-        if (item.dataset.zphase !== phase || chipGone || rawVisible || catStale || drifted) {
+        if (item.dataset.ai2robloxPhase !== phase || chipGone || rawVisible || catStale || drifted) {
           // Tracker: WHY the sweep chose this phase (only when it changes -
           // chipGone/rawVisible repaints of the same phase stay silent).
-          if (item.dataset.zphase !== phase) {
+          if (item.dataset.ai2robloxPhase !== phase) {
             // Extra suspicion flag: a command that settled ✓ done while it is
             // still the LAST assistant with NO injected result below it - the
             // exact shape of the "chip shows done but the model is still writing"
@@ -2448,7 +2448,7 @@
               stopped, live, inFlight, resumeGrace, pendingExec,
               isLast: item === P.lastAssistant(), resultAfter,
               gen: P.isGenerating(), run: A.running, starting: A.starting,
-              zStopped: item.dataset.zStopped === "1",
+              ai2robloxStopped: item.dataset.ai2robloxStopped === "1",
               remembered: isRememberedHalted(item, txt),
               lastGenAgoMs: Date.now() - A.lastGenAt,
               suspectDone,
@@ -2468,12 +2468,12 @@
       // run chip to "stopped" right here, BEFORE that guard. Idempotent: skips
       // once already at the err phase.
       const haltedTurn =
-        item.dataset.zStopped === "1" ||
+        item.dataset.ai2robloxStopped === "1" ||
         (A.userStopped && item === P.lastAssistant());
-      if (haltedTurn && P.isAssistantItem(item) && item.dataset.zphase !== "err"
-          && item.querySelector(".zs-chip")) {
-        const tx = item.querySelector(".zs-chip-tx");
-        const name = ZSParse.toolNameFromText(txt) || (tx && tx.textContent) || "tool";
+      if (haltedTurn && P.isAssistantItem(item) && item.dataset.ai2robloxPhase !== "err"
+          && item.querySelector(".ai2roblox-chip")) {
+        const tx = item.querySelector(".ai2roblox-chip-tx");
+        const name = AI2RobLoxParse.toolNameFromText(txt) || (tx && tx.textContent) || "tool";
         this.toolBox(item, name, "err", "stopped", false);
         return;
       }
@@ -2481,16 +2481,16 @@
       // Transient empty render (Angular swaps a turn's subtree before refilling
       // it): the text vanishes for a frame. Never strip a decorated turn on
       // that - the next sweep re-evaluates it with real content.
-      if (!txt.trim() && (item.dataset.zphase || item.dataset.zs)) return;
+      if (!txt.trim() && (item.dataset.ai2robloxPhase || item.dataset.ai2roblox)) return;
 
       // 4. Plain text turn. If this node still wears decoration (a recycled
       //    virtualized node), strip it so we never hide genuine content.
-      if (item.dataset.zs || item.dataset.zphase || item.querySelector(".zs-chip")) {
+      if (item.dataset.ai2roblox || item.dataset.ai2robloxPhase || item.querySelector(".ai2roblox-chip")) {
         // Tracker: a decorated node re-classified as PLAIN TEXT (virtualized
         // node recycled, or the turn's command text vanished) - its decoration
-        // (chip + zStopped marker) is stripped here. If a chip "un-settles"
+        // (chip + ai2robloxStopped marker) is stripped here. If a chip "un-settles"
         // mysteriously, this is the smoking gun to look for.
-        diag("chip.reset", { was: item.dataset.zphase || item.dataset.zs || "chip-only" });
+        diag("chip.reset", { was: item.dataset.ai2robloxPhase || item.dataset.ai2roblox || "chip-only" });
         resetDecoration(item);
       }
     },
@@ -2504,14 +2504,14 @@
       // message list. On Arena an A/B comparison renders each candidate as a
       // slide in the carousel's OWN nested <ol>, not the main flex-col-reverse
       // list - so allItems()/classify never see that node and a "run" spinner
-      // left by a Stop would spin forever. zStopped is only ever set on a
+      // left by a Stop would spin forever. ai2robloxStopped is only ever set on a
       // deliberate halt, so settling any run-phase chip under such a node is
       // safe wherever it lives. Idempotent: skips once at the err phase.
-      for (const chip of document.querySelectorAll(".zs-chip.run")) {
+      for (const chip of document.querySelectorAll(".ai2roblox-chip.run")) {
         let item = chip.parentElement;
-        while (item && !(item.dataset && item.dataset.zStopped)) item = item.parentElement;
-        if (item && item.dataset.zphase !== "err") {
-          const tx = chip.querySelector(".zs-chip-tx");
+        while (item && !(item.dataset && item.dataset.ai2robloxStopped)) item = item.parentElement;
+        if (item && item.dataset.ai2robloxPhase !== "err") {
+          const tx = chip.querySelector(".ai2roblox-chip-tx");
           this.toolBox(item, (tx && tx.textContent) || "tool", "err", "stopped", false);
         }
       }
@@ -2530,48 +2530,48 @@
 
     function build() {
       root = document.createElement("div");
-      root.id = "zs-root";
+      root.id = "ai2roblox-root";
       // One consolidated status bar, anchored just above the site's composer
       // (positioned every frame by placeBar). It carries everything: live status,
       // the primary action (Start / Stop) and a "more"
       // menu (other AI sites, custom prompt, support, Discord). No floating panel,
       // no overlay on the input - the composer stays fully usable for plain chat.
       root.innerHTML = `
-        <div id="zs-bar">
-          <span id="zs-dot" class="off" title=""></span>
-          <span id="zs-brand">ZeroScript <span class="zs-free">v${EXT_VERSION}</span></span>
-          <span id="zs-state"></span>
-          <button id="zs-action"></button>
-          <button id="zs-stop" hidden>■ Stop</button>
-          <a id="zs-discord" href="https://discord.gg/D5G2HAzX8z" target="_blank" rel="noopener" title="Need help? Join our Discord"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg></a>
-          <button id="zs-switch" aria-label="Switch AI and options" title="Switch AI, custom prompt, support"><span id="zs-switch-name"></span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
-          <button id="zs-support" aria-label="Support ZeroScript" title="Support ZeroScript"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+        <div id="ai2roblox-bar">
+          <span id="ai2roblox-dot" class="off" title=""></span>
+          <span id="ai2roblox-brand">AI2RobLox <span class="ai2roblox-free">v${EXT_VERSION}</span></span>
+          <span id="ai2roblox-state"></span>
+          <button id="ai2roblox-action"></button>
+          <button id="ai2roblox-stop" hidden>■ Stop</button>
+          <a id="ai2roblox-discord" href="https://discord.gg/D5G2HAzX8z" target="_blank" rel="noopener" title="Need help? Join our Discord"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg></a>
+          <button id="ai2roblox-switch" aria-label="Switch AI and options" title="Switch AI, custom prompt, support"><span id="ai2roblox-switch-name"></span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <button id="ai2roblox-support" aria-label="Support AI2RobLox" title="Support AI2RobLox"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
         </div>
-        <div id="zs-menu" hidden></div>
-        ${P.unstableWarning ? `<button id="zs-unstable" aria-label="Provider may be unstable" hidden>⚠ unstable</button>` : ""}
+        <div id="ai2roblox-menu" hidden></div>
+        ${P.unstableWarning ? `<button id="ai2roblox-unstable" aria-label="Provider may be unstable" hidden>⚠ unstable</button>` : ""}
       `;
       document.documentElement.appendChild(root);
-      bar = root.querySelector("#zs-bar");
-      dot = root.querySelector("#zs-dot");
-      brandEl = root.querySelector("#zs-brand");
-      stateEl = root.querySelector("#zs-state");
-      actionBtn = root.querySelector("#zs-action");
-      stopBtn = root.querySelector("#zs-stop");
-      switchBtn = root.querySelector("#zs-switch");
-      supportBtn = root.querySelector("#zs-support");
-      discordEl = root.querySelector("#zs-discord");
-      const swName = root.querySelector("#zs-switch-name");
+      bar = root.querySelector("#ai2roblox-bar");
+      dot = root.querySelector("#ai2roblox-dot");
+      brandEl = root.querySelector("#ai2roblox-brand");
+      stateEl = root.querySelector("#ai2roblox-state");
+      actionBtn = root.querySelector("#ai2roblox-action");
+      stopBtn = root.querySelector("#ai2roblox-stop");
+      switchBtn = root.querySelector("#ai2roblox-switch");
+      supportBtn = root.querySelector("#ai2roblox-support");
+      discordEl = root.querySelector("#ai2roblox-discord");
+      const swName = root.querySelector("#ai2roblox-switch-name");
       if (swName) swName.textContent = P.displayName || P.id;
-      menuEl = root.querySelector("#zs-menu");
-      bar.classList.add(`zs-prov-${P.id}`); // lets CSS tune per-site (e.g. font)
+      menuEl = root.querySelector("#ai2roblox-menu");
+      bar.classList.add(`ai2roblox-prov-${P.id}`); // lets CSS tune per-site (e.g. font)
       // Provider hook on <html> so overlay.css can tune site-specific CHIP layout
       // (not just the bar). Meta's turn root is full-width with the reply in a
       // nested centered column, so whole-turn chips (result/sys) need re-centering.
-      document.documentElement.classList.add(`zs-site-${P.id}`);
+      document.documentElement.classList.add(`ai2roblox-site-${P.id}`);
 
       actionBtn.addEventListener("click", onActionClick);
       stopBtn.addEventListener("click", stopLoop);
-      unstableEl = root.querySelector("#zs-unstable");
+      unstableEl = root.querySelector("#ai2roblox-unstable");
       if (unstableEl) {
         // Set the native tooltip via PROPERTY, not the HTML template: the warning
         // text may contain double quotes (e.g. GLM's "No response…"), which would
@@ -2632,9 +2632,9 @@
     // startSession can read it synchronously.
     let customPrompt = "";
     try {
-      chrome.storage.local.get("zsCustomPrompt", (r) => {
-        if (r && typeof r.zsCustomPrompt === "string") {
-          customPrompt = r.zsCustomPrompt;
+      chrome.storage.local.get("ai2robloxCustomPrompt", (r) => {
+        if (r && typeof r.ai2robloxCustomPrompt === "string") {
+          customPrompt = r.ai2robloxCustomPrompt;
           syncMenuPrompt();
         }
       });
@@ -2642,7 +2642,7 @@
     function getCustomPrompt() { return customPrompt; }
     // Reflect the saved value back into the menu textarea (unless being edited).
     function syncMenuPrompt() {
-      const ta = root && root.querySelector("#zs-set-text");
+      const ta = root && root.querySelector("#ai2roblox-set-text");
       if (ta && document.activeElement !== ta) ta.value = customPrompt;
     }
 
@@ -2655,16 +2655,16 @@
     // the menu UI and is kept in sync with the bridge's server health.
     let customMcpServers = [];
     try {
-      chrome.storage.local.get("zsCustomMcpServers", (r) => {
-        if (r && Array.isArray(r.zsCustomMcpServers)) {
-          customMcpServers = r.zsCustomMcpServers;
+      chrome.storage.local.get("ai2robloxCustomMcpServers", (r) => {
+        if (r && Array.isArray(r.ai2robloxCustomMcpServers)) {
+          customMcpServers = r.ai2robloxCustomMcpServers;
           if (!menuEl.hidden) buildMenu();
         }
       });
     } catch {}
     function getCustomMcpServers() { return customMcpServers; }
     function saveCustomMcpServers() {
-      try { chrome.storage.local.set({ zsCustomMcpServers: customMcpServers }); } catch {}
+      try { chrome.storage.local.set({ ai2robloxCustomMcpServers: customMcpServers }); } catch {}
     }
     // The bridge (config.json + live health) is the SOURCE OF TRUTH for which
     // addon servers actually exist - chrome.storage.local is just a display-name
@@ -2737,78 +2737,78 @@
       let sites = "";
       for (const s of AI_SITES) {
         const current = s.name.toLowerCase() === here;
-        const label = `<span class="zs-site-name"><span>${s.name}</span><span class="zs-site-host">${hostOf(s.url)}</span></span>`;
+        const label = `<span class="ai2roblox-site-name"><span>${s.name}</span><span class="ai2roblox-site-host">${hostOf(s.url)}</span></span>`;
         sites += current
-          ? `<div class="zs-site-opt zs-site-here">${label}<span class="zs-site-badge">active</span></div>`
-          : `<button class="zs-site-opt" data-u="${s.url}">${label}<span class="zs-site-go">&rarr;</span></button>`;
+          ? `<div class="ai2roblox-site-opt ai2roblox-site-here">${label}<span class="ai2roblox-site-badge">active</span></div>`
+          : `<button class="ai2roblox-site-opt" data-u="${s.url}">${label}<span class="ai2roblox-site-go">&rarr;</span></button>`;
       }
       let passes = "";
       for (const p of ROBUX_PASSES) {
-        passes += `<button class="zs-tip-opt zs-tip-rbx" data-u="${passUrl(p.id)}"><span class="zs-rbx-cur">R$</span>${p.robux}</button>`;
+        passes += `<button class="ai2roblox-tip-opt ai2roblox-tip-rbx" data-u="${passUrl(p.id)}"><span class="ai2roblox-rbx-cur">R$</span>${p.robux}</button>`;
       }
       const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
       const mergedServers = mergedMcpServers();
       // Roblox always heads the list - greyed out, no health dot (its own status
-      // is already the main ZeroScript dot elsewhere) and no remove button (it's
+      // is already the main AI2RobLox dot elsewhere) and no remove button (it's
       // the primary server, protected bridge-side too).
       let mcpList =
-        `<div class="zs-mcp-item zs-mcp-item-primary"><div class="zs-mcp-info"><span class="zs-mcp-name">Roblox Studio</span><span class="zs-mcp-url">primary - always connected</span></div></div>`;
+        `<div class="ai2roblox-mcp-item ai2roblox-mcp-item-primary"><div class="ai2roblox-mcp-info"><span class="ai2roblox-mcp-name">Roblox Studio</span><span class="ai2roblox-mcp-url">primary - always connected</span></div></div>`;
       mergedServers.forEach((s, i) => {
         // alive === undefined -> the bridge hasn't reported this server's health
         // yet (just added/removed, still restarting) - shown neutral, not red.
         const healthClass = s.alive === true ? "on" : s.alive === false ? "off" : "unknown";
         const healthTitle = s.alive === true ? `${s.tools || 0} tools available` : s.alive === false ? "offline" : "status unknown";
-        mcpList += `<div class="zs-mcp-item"><span class="zs-mcp-health zs-mcp-health-${healthClass}" title="${healthTitle}"></span><div class="zs-mcp-info"><span class="zs-mcp-name">${esc(s.name)}</span><span class="zs-mcp-url">${esc(s.command || s.id)}</span></div><button class="zs-mcp-remove" data-id="${esc(s.id)}" title="Remove">✕</button></div>`;
+        mcpList += `<div class="ai2roblox-mcp-item"><span class="ai2roblox-mcp-health ai2roblox-mcp-health-${healthClass}" title="${healthTitle}"></span><div class="ai2roblox-mcp-info"><span class="ai2roblox-mcp-name">${esc(s.name)}</span><span class="ai2roblox-mcp-url">${esc(s.command || s.id)}</span></div><button class="ai2roblox-mcp-remove" data-id="${esc(s.id)}" title="Remove">✕</button></div>`;
       });
       menuEl.innerHTML =
-        `<div class="zs-menu-head"><span class="zs-menu-logo">ZeroScript</span><span class="zs-menu-tag">v${EXT_VERSION}</span></div>
-         <section class="zs-menu-sec">
-           <div class="zs-sec-label"><span>Switch AI</span></div>
+        `<div class="ai2roblox-menu-head"><span class="ai2roblox-menu-logo">AI2RobLox</span><span class="ai2roblox-menu-tag">v${EXT_VERSION}</span></div>
+         <section class="ai2roblox-menu-sec">
+           <div class="ai2roblox-sec-label"><span>Switch AI</span></div>
            ${sites}
          </section>
-         <section class="zs-menu-sec">
-           <div class="zs-sec-label"><span>Free Support</span></div>
-           <button class="zs-tip-opt zs-tip-star" data-u="${GITHUB_URL}"><span>Star on GitHub</span><span class="zs-tip-sub">free, helps a lot</span></button>
-           ${WORKINK_URL ? `<button class="zs-tip-opt zs-tip-ad" data-u="${WORKINK_URL}"><span>Watch an ad to support</span><span class="zs-tip-sub">free, takes a minute</span></button>` : ""}
+         <section class="ai2roblox-menu-sec">
+           <div class="ai2roblox-sec-label"><span>Free Support</span></div>
+           <button class="ai2roblox-tip-opt ai2roblox-tip-star" data-u="${GITHUB_URL}"><span>Star on GitHub</span><span class="ai2roblox-tip-sub">free, helps a lot</span></button>
+           ${WORKINK_URL ? `<button class="ai2roblox-tip-opt ai2roblox-tip-ad" data-u="${WORKINK_URL}"><span>Watch an ad to support</span><span class="ai2roblox-tip-sub">free, takes a minute</span></button>` : ""}
          </section>
-         <section class="zs-menu-sec">
-           <div class="zs-sec-label"><span>Support with Robux / Ko-fi</span></div>
-           <button class="zs-tip-opt zs-tip-kofi" data-u="${KOFI_URL}"><span>Tip on Ko-fi</span><span class="zs-tip-sub">any amount</span></button>
-           <div class="zs-tip-sep">or tip in Robux</div>
-           <div class="zs-rbx-grid">${passes}</div>
+         <section class="ai2roblox-menu-sec">
+           <div class="ai2roblox-sec-label"><span>Support with Robux / Ko-fi</span></div>
+           <button class="ai2roblox-tip-opt ai2roblox-tip-kofi" data-u="${KOFI_URL}"><span>Tip on Ko-fi</span><span class="ai2roblox-tip-sub">any amount</span></button>
+           <div class="ai2roblox-tip-sep">or tip in Robux</div>
+           <div class="ai2roblox-rbx-grid">${passes}</div>
          </section>
-         <section class="zs-menu-sec">
-           <div class="zs-sec-label"><span>Custom prompt</span></div>
-           <div class="zs-menu-note">Added below the system prompt on every new session. The built-in prompt can't be edited.</div>
-           <textarea id="zs-set-text" rows="4" placeholder="e.g. Always comment your Luau code. Prefer small modular scripts."></textarea>
-           <div class="zs-set-row"><button id="zs-set-save">Save</button><span id="zs-set-status"></span></div>
+         <section class="ai2roblox-menu-sec">
+           <div class="ai2roblox-sec-label"><span>Custom prompt</span></div>
+           <div class="ai2roblox-menu-note">Added below the system prompt on every new session. The built-in prompt can't be edited.</div>
+           <textarea id="ai2roblox-set-text" rows="4" placeholder="e.g. Always comment your Luau code. Prefer small modular scripts."></textarea>
+           <div class="ai2roblox-set-row"><button id="ai2roblox-set-save">Save</button><span id="ai2roblox-set-status"></span></div>
          </section>
-         <section class="zs-menu-sec">
-           <div class="zs-sec-label"><span>MCP servers</span></div>
-           <div class="zs-menu-note">Roblox Studio is always connected (primary). Add another MCP server (e.g. Blender, Sketchfab) as an addon - the bridge restarts briefly to load it. Experimental.</div>
+         <section class="ai2roblox-menu-sec">
+           <div class="ai2roblox-sec-label"><span>MCP servers</span></div>
+           <div class="ai2roblox-menu-note">Roblox Studio is always connected (primary). Add another MCP server (e.g. Blender, Sketchfab) as an addon - the bridge restarts briefly to load it. Experimental.</div>
            ${mcpList}
-           <div class="zs-mcp-sep"></div>
-           <input id="zs-mcp-name" class="zs-mcp-field" placeholder="Name, e.g. Blender" />
-           <input id="zs-mcp-url" class="zs-mcp-field" placeholder="Start command, e.g. npx -y @some/mcp-server" />
-           <div class="zs-set-row"><button id="zs-mcp-add">Add server</button><span id="zs-mcp-status"></span></div>
+           <div class="ai2roblox-mcp-sep"></div>
+           <input id="ai2roblox-mcp-name" class="ai2roblox-mcp-field" placeholder="Name, e.g. Blender" />
+           <input id="ai2roblox-mcp-url" class="ai2roblox-mcp-field" placeholder="Start command, e.g. npx -y @some/mcp-server" />
+           <div class="ai2roblox-set-row"><button id="ai2roblox-mcp-add">Add server</button><span id="ai2roblox-mcp-status"></span></div>
          </section>`;
       const open = (url) => { try { window.open(url, "_blank", "noopener"); } catch {} menuEl.hidden = true; };
-      menuEl.querySelectorAll("button.zs-site-opt, .zs-tip-opt").forEach((b) =>
+      menuEl.querySelectorAll("button.ai2roblox-site-opt, .ai2roblox-tip-opt").forEach((b) =>
         b.addEventListener("click", () => open(b.dataset.u)));
-      const ta = menuEl.querySelector("#zs-set-text");
-      const saveBtn = menuEl.querySelector("#zs-set-save");
-      const status = menuEl.querySelector("#zs-set-status");
+      const ta = menuEl.querySelector("#ai2roblox-set-text");
+      const saveBtn = menuEl.querySelector("#ai2roblox-set-save");
+      const status = menuEl.querySelector("#ai2roblox-set-status");
       ta.value = customPrompt;
       saveBtn.addEventListener("click", () => {
         customPrompt = ta.value;
-        try { chrome.storage.local.set({ zsCustomPrompt: customPrompt }); } catch {}
+        try { chrome.storage.local.set({ ai2robloxCustomPrompt: customPrompt }); } catch {}
         status.textContent = "Saved ✓";
         setTimeout(() => { status.textContent = ""; }, 1600);
       });
-      const mcpNameEl = menuEl.querySelector("#zs-mcp-name");
-      const mcpUrlEl = menuEl.querySelector("#zs-mcp-url");
-      const mcpStatus = menuEl.querySelector("#zs-mcp-status");
-      const mcpAddBtn = menuEl.querySelector("#zs-mcp-add");
+      const mcpNameEl = menuEl.querySelector("#ai2roblox-mcp-name");
+      const mcpUrlEl = menuEl.querySelector("#ai2roblox-mcp-url");
+      const mcpStatus = menuEl.querySelector("#ai2roblox-mcp-status");
+      const mcpAddBtn = menuEl.querySelector("#ai2roblox-mcp-add");
       // Disable every add/remove control and show the restart spinner. Adding or
       // removing a server rewrites config.json and restarts the whole bridge, so
       // no other server edit may run until it is back.
@@ -2816,13 +2816,13 @@
       function setMcpBusy(on, label) {
         mcpBusy = on;
         mcpAddBtn.disabled = on;
-        menuEl.querySelectorAll(".zs-mcp-remove").forEach((b) => (b.disabled = on));
+        menuEl.querySelectorAll(".ai2roblox-mcp-remove").forEach((b) => (b.disabled = on));
         mcpStatus.innerHTML = on
-          ? `<span class="zs-mcp-spin-row"><span class="zs-mcp-spin"></span>${label || "Restarting bridge…"}</span>`
+          ? `<span class="ai2roblox-mcp-spin-row"><span class="ai2roblox-mcp-spin"></span>${label || "Restarting bridge…"}</span>`
           : "";
       }
 
-      menuEl.querySelectorAll(".zs-mcp-remove").forEach((b) =>
+      menuEl.querySelectorAll(".ai2roblox-mcp-remove").forEach((b) =>
         b.addEventListener("click", async () => {
           if (mcpBusy) return;
           const id = b.dataset.id;
@@ -2870,47 +2870,47 @@
     // ── First-time onboarding card (bridge missing) ─────────────────────────
     let setupCard = null, setupSeen = false, setupRaf = null;
     try {
-      chrome.storage.local.get("zsSetupSeen", (r) => {
-        if (r && r.zsSetupSeen) setupSeen = true;
+      chrome.storage.local.get("ai2robloxSetupSeen", (r) => {
+        if (r && r.ai2robloxSetupSeen) setupSeen = true;
       });
     } catch {}
 
     function buildSetup() {
       setupCard = document.createElement("div");
-      setupCard.id = "zs-setup";
+      setupCard.id = "ai2roblox-setup";
       setupCard.hidden = true;
       const videoBtn = VIDEO_URL
-        ? `<a id="zs-setup-video" href="${VIDEO_URL}" target="_blank" rel="noopener">▶︎ Watch tutorial</a>`
+        ? `<a id="ai2roblox-setup-video" href="${VIDEO_URL}" target="_blank" rel="noopener">▶︎ Watch tutorial</a>`
         : "";
       setupCard.innerHTML =
-        `<div id="zs-setup-head"><span id="zs-setup-logo">ZeroScript</span><span id="zs-setup-tag">Setup</span></div>` +
-        `<div id="zs-setup-sub">The <b>Bridge</b> is what connects this chat to Roblox Studio. Three steps and you're running.</div>` +
-        `<ol id="zs-setup-steps">` +
+        `<div id="ai2roblox-setup-head"><span id="ai2roblox-setup-logo">AI2RobLox</span><span id="ai2roblox-setup-tag">Setup</span></div>` +
+        `<div id="ai2roblox-setup-sub">The <b>Bridge</b> is what connects this chat to Roblox Studio. Three steps and you're running.</div>` +
+        `<ol id="ai2roblox-setup-steps">` +
           `<li>Download the Bridge from GitHub</li>` +
           `<li>Run <code>start.bat</code></li>` +
           `<li>Back here, click <b>Start Roblox agent</b></li>` +
         `</ol>` +
-        `<div class="zs-setup-copy-row">` +
-          `<input type="text" id="zs-setup-link" readonly value="${GITHUB_URL}">` +
-          `<button id="zs-setup-copy">Copy</button>` +
+        `<div class="ai2roblox-setup-copy-row">` +
+          `<input type="text" id="ai2roblox-setup-link" readonly value="${GITHUB_URL}">` +
+          `<button id="ai2roblox-setup-copy">Copy</button>` +
         `</div>` +
         videoBtn +
-        `<button id="zs-setup-dismiss">Got it</button>`;
+        `<button id="ai2roblox-setup-dismiss">Got it</button>`;
       document.documentElement.appendChild(setupCard);
 
-      setupCard.querySelector("#zs-setup-copy").addEventListener("click", () => {
+      setupCard.querySelector("#ai2roblox-setup-copy").addEventListener("click", () => {
         try { navigator.clipboard.writeText(GITHUB_URL); } catch {
-          const inp = setupCard.querySelector("#zs-setup-link");
+          const inp = setupCard.querySelector("#ai2roblox-setup-link");
           inp.select(); try { document.execCommand("copy"); } catch {}
         }
-        const btn = setupCard.querySelector("#zs-setup-copy");
+        const btn = setupCard.querySelector("#ai2roblox-setup-copy");
         btn.textContent = "Copied!";
         setTimeout(() => { btn.textContent = "Copy"; }, 1600);
       });
 
-      setupCard.querySelector("#zs-setup-dismiss").addEventListener("click", () => {
+      setupCard.querySelector("#ai2roblox-setup-dismiss").addEventListener("click", () => {
         setupSeen = true;
-        try { chrome.storage.local.set({ zsSetupSeen: true }); } catch {}
+        try { chrome.storage.local.set({ ai2robloxSetupSeen: true }); } catch {}
         hideSetup();
       });
     }
@@ -2936,7 +2936,7 @@
     function refreshSetup(bridgeConnected) {
       if (setupSeen || bridgeConnected) { hideSetup(); return; }
       // Bridge is down, but if the user is just READING an existing
-      // conversation with no ZeroScript session (the "No agent here" state),
+      // conversation with no AI2RobLox session (the "No agent here" state),
       // a "bridge down" onboarding popup is pure noise - they may not want an
       // agent here at all (user request). Keep it for the states where the
       // bridge actually matters: a fresh/empty chat (the Start affordance is
@@ -2973,7 +2973,7 @@
       // chats share a key, and the conversation id only appears mid-bootstrap).
       else if (A.starting) {
         toneClass = "starting";
-        indicator = `<span class="zs-spin"></span>`;
+        indicator = `<span class="ai2roblox-spin"></span>`;
         msg = `Starting the Roblox agent…`;
         label = "Starting…"; kind = "starting"; disabled = true;
       } else if (A.started) {
@@ -3005,7 +3005,7 @@
           // offline)" path) - they may only want the addon tools (e.g. Blender).
           // Keep the YELLOW dot as the honest health signal, but do NOT keep the
           // red imperative "open Roblox Studio" nag on screen for the whole
-          // session (warn=false → no zs-state-warn red text). The full nag
+          // session (warn=false → no ai2roblox-state-warn red text). The full nag
           // still shows when NO server is usable (the branches below).
           toneClass = "warn";
           msg = `<b>Agent active</b>${tools ? ` · ${tools} tools` : ""} · Roblox offline`;
@@ -3103,13 +3103,13 @@
       const sig = [toneClass, indicator, msg, label, kind, disabled, warn, busy, showExtras].join("|");
       if (sig === lastBarSig) return;
       lastBarSig = sig;
-      // Set the tone WITHOUT clobbering other classes (e.g. zs-bar-inline, which
+      // Set the tone WITHOUT clobbering other classes (e.g. ai2roblox-bar-inline, which
       // placeBar adds for the in-flow mount - overwriting className broke the
       // layout, making the bar fall back to fixed positioning and overlap).
       bar.classList.remove("tone-standby", "tone-active", "tone-warn", "tone-noagent", "tone-starting");
       bar.classList.add(`tone-${toneClass}`);
-      stateEl.innerHTML = indicator + `<span class="zs-state-txt">${msg}</span>`;
-      stateEl.classList.toggle("zs-state-warn", warn);
+      stateEl.innerHTML = indicator + `<span class="ai2roblox-state-txt">${msg}</span>`;
+      stateEl.classList.toggle("ai2roblox-state-warn", warn);
       actionBtn.textContent = label;
       actionBtn.dataset.kind = kind;
       actionBtn.disabled = disabled;
@@ -3132,7 +3132,7 @@
       A.bridge = s;
       if (!dot) return;
       const servers = s.servers || [];
-      // ZeroScript status tracks ONLY the primary Roblox MCP server. Every other
+      // AI2RobLox status tracks ONLY the primary Roblox MCP server. Every other
       // server is an addon and must NEVER make the dot/gate look connected while
       // Roblox itself is down. Old bridges don't send per-server health, so fall
       // back to the aggregate signals they do send (mcpAlive / total tools).
@@ -3198,7 +3198,7 @@
       // bridge later drops, it would reappear on top of the bridge-lost banner).
       if (s.connected && !setupSeen) {
         setupSeen = true;
-        try { chrome.storage.local.set({ zsSetupSeen: true }); } catch {}
+        try { chrome.storage.local.set({ ai2robloxSetupSeen: true }); } catch {}
       }
       renderBar();
       refreshSetup(s.connected);
@@ -3215,13 +3215,13 @@
       A.staleExtension = true;
       renderBar();
       if (bridgeBannerEl) { bridgeBannerEl.remove(); bridgeBannerEl = null; }
-      if (root.querySelector(".zs-banner.zs-stale")) return;
+      if (root.querySelector(".ai2roblox-banner.ai2roblox-stale")) return;
       const b = document.createElement("div");
-      b.className = "zs-banner limit zs-stale";
-      b.innerHTML = `<div class="zs-banner-t">⚠ Reload this page to reconnect ZeroScript</div>
-        <div class="zs-banner-m">ZeroScript was updated or reloaded while this tab was open, so this page is still running the old copy and commands can no longer run. Your bridge and Roblox Studio are fine - only this page needs refreshing.</div>
-        <div class="zs-banner-acts"><button class="zs-banner-reload">Reload page</button></div>`;
-      b.querySelector(".zs-banner-reload").addEventListener("click", () => location.reload());
+      b.className = "ai2roblox-banner limit ai2roblox-stale";
+      b.innerHTML = `<div class="ai2roblox-banner-t">⚠ Reload this page to reconnect AI2RobLox</div>
+        <div class="ai2roblox-banner-m">AI2RobLox was updated or reloaded while this tab was open, so this page is still running the old copy and commands can no longer run. Your bridge and Roblox Studio are fine - only this page needs refreshing.</div>
+        <div class="ai2roblox-banner-acts"><button class="ai2roblox-banner-reload">Reload page</button></div>`;
+      b.querySelector(".ai2roblox-banner-reload").addEventListener("click", () => location.reload());
       root.appendChild(b);
       bridgeBannerEl = b;
     }
@@ -3234,16 +3234,16 @@
       }
       if (bridgeBannerEl) return; // already shown
       const b = document.createElement("div");
-      b.className = "zs-banner limit";
+      b.className = "ai2roblox-banner limit";
       // The setup tutorial lives INSIDE this banner (not as a separate card) so it
       // can never overlap the alert - the previous standalone onboarding card did.
       const videoLink = VIDEO_URL
-        ? `<a class="zs-banner-video" href="${VIDEO_URL}" target="_blank" rel="noopener">▶︎ Watch setup tutorial</a>`
+        ? `<a class="ai2roblox-banner-video" href="${VIDEO_URL}" target="_blank" rel="noopener">▶︎ Watch setup tutorial</a>`
         : "";
-      b.innerHTML = `<div class="zs-banner-t">⚠ Lost connection to ZeroScript</div>
-        <div class="zs-banner-m">The ZeroScript bridge stopped on your PC. Restart it (run start.bat and keep Roblox Studio open): the agent will reconnect automatically as soon as it is detected again.</div>
-        <div class="zs-banner-acts">${videoLink}<button class="zs-banner-x">Close</button></div>`;
-      b.querySelector(".zs-banner-x").addEventListener("click", () => { b.remove(); if (bridgeBannerEl === b) bridgeBannerEl = null; });
+      b.innerHTML = `<div class="ai2roblox-banner-t">⚠ Lost connection to AI2RobLox</div>
+        <div class="ai2roblox-banner-m">The AI2RobLox bridge stopped on your PC. Restart it (run start.bat and keep Roblox Studio open): the agent will reconnect automatically as soon as it is detected again.</div>
+        <div class="ai2roblox-banner-acts">${videoLink}<button class="ai2roblox-banner-x">Close</button></div>`;
+      b.querySelector(".ai2roblox-banner-x").addEventListener("click", () => { b.remove(); if (bridgeBannerEl === b) bridgeBannerEl = null; });
       root.appendChild(b);
       bridgeBannerEl = b;
     }
@@ -3293,15 +3293,15 @@
         toast("Tip: click “▶︎ Start Roblox agent” to let the AI control Roblox Studio.");
       }
       if (!actionBtn) return;
-      actionBtn.classList.add("zs-flash");
-      setTimeout(() => actionBtn.classList.remove("zs-flash"), 1200);
+      actionBtn.classList.add("ai2roblox-flash");
+      setTimeout(() => actionBtn.classList.remove("ai2roblox-flash"), 1200);
     }
 
     // ── Theme auto-detection (light / dark) ─────────────────────────────────
     // The panel and the in-conversation chips are dark-themed by default. On a
     // LIGHT host page the chips' light text on a near-transparent tint becomes
     // invisible, so we detect the page's effective background luminance and add
-    // `.zs-light` to <html>; overlay.css then flips to readable light colours.
+    // `.ai2roblox-light` to <html>; overlay.css then flips to readable light colours.
     // Most chat sites declare their theme EXPLICITLY (a `dark`/`light` class on
     // <html>/<body>, a data-theme attribute, or CSS color-scheme) - far more
     // reliable than luminance, since many (e.g. z.ai) leave <html>/<body> with a
@@ -3341,7 +3341,7 @@
         if (m.length < 3) return;
         light = 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2] > 140;
       }
-      document.documentElement.classList.toggle("zs-light", light);
+      document.documentElement.classList.toggle("ai2roblox-light", light);
     }
 
     // Where the bar lives INSIDE the site's composer. We insert it as a real,
@@ -3388,7 +3388,7 @@
 
       // Self-heal: a SPA navigation or a full re-render on the host (seen on Arena
       // when the message frame jumps/teleports to the bottom) can detach our whole
-      // #zs-root from <html>, taking the bar with it - and nothing re-adds it, so
+      // #ai2roblox-root from <html>, taking the bar with it - and nothing re-adds it, so
       // the panel just vanishes. Re-append it whenever it's been detached; this
       // rAF loop is resilient (its next frame is scheduled before any body code),
       // so the panel reappears on the very next frame.
@@ -3425,13 +3425,13 @@
         if (bar.parentElement !== mount.parent || bar.nextElementSibling !== mount.before) {
           try { mount.parent.insertBefore(bar, mount.before || null); } catch {}
         }
-        if (!bar.classList.contains("zs-bar-inline")) {
-          bar.classList.add("zs-bar-inline");
+        if (!bar.classList.contains("ai2roblox-bar-inline")) {
+          bar.classList.add("ai2roblox-bar-inline");
           bar.style.cssText = ""; // drop any leftover float positioning
         }
         // Transparent (blends in) when mounted INSIDE the input box; surface card
         // when mounted ABOVE it. The provider's barMount() signals which via .inside.
-        bar.classList.toggle("zs-bar-inside", !!mount.inside);
+        bar.classList.toggle("ai2roblox-bar-inside", !!mount.inside);
         bar.style.display = "flex";
         if (menuEl && !menuEl.hidden) {
           const br = bar.getBoundingClientRect();
@@ -3444,16 +3444,16 @@
 
       // Anchored mode: the provider wants the integrated, in-composer LOOK but
       // its composer is a framework-reconciled subtree we must NOT insert our
-      // node into (e.g. Kimi's Vue tree - inserting #zs-bar there makes Vue's
+      // node into (e.g. Kimi's Vue tree - inserting #ai2roblox-bar there makes Vue's
       // next diff reuse the bar node as a host and nest the editor inside it).
-      // So we keep the bar in our own #zs-root, position it (position:fixed) to
+      // So we keep the bar in our own #ai2roblox-root, position it (position:fixed) to
       // hug the composer's top edge at full width, and RESERVE that strip with
       // padding-top on the composer so it reads as in-flow without ever becoming
       // a child of the framework's DOM. barAnchor() returns the element to hug.
       const anchorEl = (P.barAnchor && P.barAnchor()) || null;
       if (anchorEl && anchorEl.isConnected) {
-        bar.classList.remove("zs-bar-inline", "zs-bar-inside");
-        bar.classList.add("zs-bar-anchored");
+        bar.classList.remove("ai2roblox-bar-inline", "ai2roblox-bar-inside");
+        bar.classList.add("ai2roblox-bar-anchored");
         if (root && bar.parentElement !== root) root.appendChild(bar);
         const r = anchorEl.getBoundingClientRect();
         if (!r.width) { bar.style.display = "none"; clearAnchorPad(); if (menuEl) menuEl.hidden = true; return; }
@@ -3466,20 +3466,20 @@
         bar.style.top = Math.round(r.top) + "px";
         bar.style.width = Math.round(r.width) + "px";
         if (menuEl && !menuEl.hidden) {
-          bar.classList.remove("zs-bar-inline"); // ensure fixed geometry for menu math
+          bar.classList.remove("ai2roblox-bar-inline"); // ensure fixed geometry for menu math
           menuEl.style.right = Math.round(window.innerWidth - (r.left + r.width)) + "px";
           menuEl.style.bottom = Math.round(window.innerHeight - r.top + 6) + "px";
           menuEl.style.maxHeight = Math.max(140, Math.round(r.top - 16)) + "px";
         }
         return;
       }
-      bar.classList.remove("zs-bar-anchored");
+      bar.classList.remove("ai2roblox-bar-anchored");
       clearAnchorPad();
 
       // Fallback: float just above the editor (fixed positioning), for sites
       // where no clean inline mount could be resolved.
-      if (bar.classList.contains("zs-bar-inline")) {
-        bar.classList.remove("zs-bar-inline");
+      if (bar.classList.contains("ai2roblox-bar-inline")) {
+        bar.classList.remove("ai2roblox-bar-inline");
         if (root && bar.parentElement !== root) root.appendChild(bar);
       }
       const f = (P.getEditor && P.getEditor()) || (P.composerFrame && P.composerFrame());
@@ -3565,15 +3565,15 @@
       const ed = P.getEditor();
       if (!on) {
         if (cover) { cover.style.display = "none"; cover.dataset.on = ""; }
-        if (ed) ed.classList.remove("zs-typing");
+        if (ed) ed.classList.remove("ai2roblox-typing");
         cancelAnimationFrame(coverRaf);
         return;
       }
       if (!ed) return;
-      ed.classList.add("zs-typing"); // make the typed text itself invisible
+      ed.classList.add("ai2roblox-typing"); // make the typed text itself invisible
       if (!cover) {
         cover = document.createElement("div");
-        cover.id = "zs-input-cover";
+        cover.id = "ai2roblox-input-cover";
         cover.innerHTML = `<span>Agent is working…</span>`;
         document.documentElement.appendChild(cover);
       }
@@ -3589,7 +3589,7 @@
         // recreate the editor on each inject/clear (Kimi's Vue) drop the class,
         // which would un-hide the raw text and un-cap its height. Cheap idempotent
         // add every frame keeps the mask + height cap glued to the live node.
-        if (!e.classList.contains("zs-typing")) e.classList.add("zs-typing");
+        if (!e.classList.contains("ai2roblox-typing")) e.classList.add("ai2roblox-typing");
         // The cover is SIZED to coverTarget() when a provider supplies one, else
         // to the editor node itself. Some composers (Meta AI) make the editable a
         // tiny line inside a much larger rounded card - covering only the editor
@@ -3615,7 +3615,7 @@
         // Clip the cover to the composer's VISIBLE band. Some composers grow the
         // inner editor node past a scrolling ancestor that clips it (Kimi's Vue
         // RECREATES .chat-input-editor on every inject/clear, dropping the
-        // .zs-typing height cap, so the editor balloons to ~1500px while its
+        // .ai2roblox-typing height cap, so the editor balloons to ~1500px while its
         // .chat-input-editor-container caps the visible box via overflow:auto).
         // Measuring the raw editor then centres the cover on the giant editor's
         // midpoint - far below the visible input - so it "vanishes" off the box.
@@ -3690,7 +3690,7 @@
         // (seen on Cloudflare's 1-line textarea). For a composer already taller
         // than MIN_H the maths reduces to the old `r.top - PAD`, so DeepSeek/Gemini
         // are unchanged.
-        // Hard ceiling: even though .zs-typing caps the editor's visual height
+        // Hard ceiling: even though .ai2roblox-typing caps the editor's visual height
         // (see overlay.css), belt-and-suspenders clamp the cover so a composer
         // whose growing element escapes that CSS cap on some provider can never
         // turn the "Agent is working…" cover into a full-page white slab.
@@ -3715,7 +3715,7 @@
 
     function toast(msg) {
       const t = document.createElement("div");
-      t.className = "zs-toast";
+      t.className = "ai2roblox-toast";
       t.textContent = msg;
       root.appendChild(t);
       setTimeout(() => t.classList.add("show"), 10);
@@ -3724,42 +3724,42 @@
 
     function banner(kind, title, msg) {
       const b = document.createElement("div");
-      b.className = `zs-banner ${kind}`;
-      b.innerHTML = `<div class="zs-banner-t"></div><div class="zs-banner-m"></div>
-        <div class="zs-banner-acts">
-          <button class="zs-banner-x">Close</button>
+      b.className = `ai2roblox-banner ${kind}`;
+      b.innerHTML = `<div class="ai2roblox-banner-t"></div><div class="ai2roblox-banner-m"></div>
+        <div class="ai2roblox-banner-acts">
+          <button class="ai2roblox-banner-x">Close</button>
         </div>`;
-      b.querySelector(".zs-banner-t").textContent = title;
-      b.querySelector(".zs-banner-m").textContent = msg;
-      b.querySelector(".zs-banner-x").addEventListener("click", () => b.remove());
+      b.querySelector(".ai2roblox-banner-t").textContent = title;
+      b.querySelector(".ai2roblox-banner-m").textContent = msg;
+      b.querySelector(".ai2roblox-banner-x").addEventListener("click", () => b.remove());
       root.appendChild(b);
     }
 
-    // Left-hand ZeroScript popup showing the latest screen_capture. Fed from the
+    // Left-hand AI2RobLox popup showing the latest screen_capture. Fed from the
     // in-memory base64 (a data: URL always renders), so it works identically on
     // every provider and never touches the site's DOM. Only the most recent
     // capture is kept - a new one replaces the old.
     function showImages(images, toolName) {
-      root.querySelectorAll(".zs-shot").forEach((e) => e.remove());
+      root.querySelectorAll(".ai2roblox-shot").forEach((e) => e.remove());
       const wrap = document.createElement("div");
-      wrap.className = "zs-shot";
+      wrap.className = "ai2roblox-shot";
       const hdr = document.createElement("div");
-      hdr.className = "zs-shot-hdr";
+      hdr.className = "ai2roblox-shot-hdr";
       const ttl = document.createElement("span");
-      ttl.className = "zs-shot-ttl";
+      ttl.className = "ai2roblox-shot-ttl";
       ttl.textContent = `${toolName} · ${images.length} image${images.length > 1 ? "s" : ""}`;
       const close = document.createElement("button");
-      close.className = "zs-shot-x";
+      close.className = "ai2roblox-shot-x";
       close.textContent = "✕";
       close.addEventListener("click", () => wrap.remove());
       hdr.appendChild(ttl);
       hdr.appendChild(close);
       wrap.appendChild(hdr);
       const body = document.createElement("div");
-      body.className = "zs-shot-body";
+      body.className = "ai2roblox-shot-body";
       for (const img of images) {
         const el = document.createElement("img");
-        el.className = "zs-shot-img";
+        el.className = "ai2roblox-shot-img";
         el.src = `data:${img.mimeType || "image/jpeg"};base64,${img.data}`;
         body.appendChild(el);
       }
@@ -3793,14 +3793,14 @@
   }
 
   function setChipDetail(item, text) {
-    const dt = item && item.querySelector(".zs-chip .zs-chip-dt");
+    const dt = item && item.querySelector(".ai2roblox-chip .ai2roblox-chip-dt");
     if (dt) dt.textContent = text;
   }
 
   // Update ONLY the chip's label text (no innerHTML rebuild), so live-correcting
   // the name mid-stream doesn't restart the spinner or wipe the token meter.
   function setChipLabel(item, text) {
-    const tx = item && item.querySelector(".zs-chip .zs-chip-tx");
+    const tx = item && item.querySelector(".ai2roblox-chip .ai2roblox-chip-tx");
     if (tx && tx.textContent !== text) tx.textContent = text;
   }
 
@@ -3813,13 +3813,13 @@
   }
 
   // Timestamp of the user's last REAL click on the site (trusted event, outside
-  // ZeroScript's own UI). A genuine "regenerate ↻" is always such a click;
+  // AI2RobLox's own UI). A genuine "regenerate ↻" is always such a click;
   // DeepSeek's post-stop phantom generations and stop-button re-mount flickers
   // never are - this is what tells them apart (seen live: two false regenResume
   // fired 8s/2s after a Stop with no user action, un-stopping the halted turn).
   let _userClickAt = 0;
   document.addEventListener("click", (e) => {
-    if (e.isTrusted && !(e.target && e.target.closest && e.target.closest("#zs-root"))) {
+    if (e.isTrusted && !(e.target && e.target.closest && e.target.closest("#ai2roblox-root"))) {
       _userClickAt = Date.now();
     }
   }, true);
@@ -3883,7 +3883,7 @@
       // Distinguish the two by ORDER, not a fixed delay: require the latest
       // trusted click to fall clearly AFTER the Stop (clickAfterStop). A native
       // stop click lands ~at A.stopAt, so it fails this and can't self-resume;
-      // the extension's own "■ Stop" is inside #zs-root and never updates
+      // the extension's own "■ Stop" is inside #ai2roblox-root and never updates
       // _userClickAt at all, so only the later regenerate qualifies. This
       // replaces the old absolute `stopAge > 3000` grace, which also blocked a
       // user who regenerated quickly (~1.5s) after Stop - the real bug seen live.
@@ -3896,8 +3896,8 @@
         A.userStopped = false;
         const it = P.lastAssistant();
         if (it) {
-          delete it.dataset.zStopped; delete it.dataset.zResume;
-          delete it.dataset.zResumeLen; delete it.dataset.zloop;
+          delete it.dataset.ai2robloxStopped; delete it.dataset.ai2robloxResume;
+          delete it.dataset.ai2robloxResumeLen; delete it.dataset.ai2robloxLoop;
           forgetHalted(it);
           // Strip the OLD command's chip immediately. The regenerate reuses this
           // turn node, and without this the previous execute_luau chip (with its
@@ -3914,10 +3914,10 @@
           // stopped chip turns into a grey spinner on the OLD call" flash reported
           // live. Capture the old text length so the sweep can tell the DOM still
           // holds the stale command and keep the coherent red "stopped" look until
-          // Kimi actually replaces it (see the zRegenLen guard in classify).
+          // Kimi actually replaces it (see the ai2robloxRegenLen guard in classify).
           try {
-            it.dataset.zRegenLen = String(P.classifyText(it, ".zs-chip").length);
-            it.dataset.zRegenAt = String(Date.now());
+            it.dataset.ai2robloxRegenLen = String(P.classifyText(it, ".ai2roblox-chip").length);
+            it.dataset.ai2robloxRegenAt = String(Date.now());
           } catch {}
         }
         // Bridge the gap until the auto-resume watchdog (1s interval) re-owns the
@@ -3944,7 +3944,7 @@
     // - stopLoop both halts our loop AND clicks the site's native stop - and the
     // site's native stop likewise halts our loop via onNativeStop, so either one
     // fully stops everything. Two stop buttons at once is fine.
-    // The bare isHardGenerating() term is gated on a live ZeroScript session: on
+    // The bare isHardGenerating() term is gated on a live AI2RobLox session: on
     // a plain chat with no session, a user's own message makes the site generate,
     // and we must NOT briefly flash our Stop button over that.
     // Self-heal a stuck "Stopping…": if we flagged stopping but nothing is
@@ -3963,7 +3963,7 @@
         // and Gemini queues that stray abort against the conversation, then
         // KILLS THE NEXT reply the instant it starts ("Vous avez interrompu
         // cette réponse" on a message the user never stopped - validated live,
-        // 2026-07: two stray stop.retry clicks after a ZS Stop made the next
+        // 2026-07: two stray stop.retry clicks after an AI2RobLox Stop made the next
         // two user turns die instantly; with no stray clicks the same flow
         // worked). A swallowed first click - the case this retry exists for -
         // always shows up as the stream STILL writing, i.e. growth past the
@@ -3992,7 +3992,7 @@
 
     // Tool is executing on the MCP → timer on its chip.
     if (A.toolRunning && A.toolItem) {
-      const s = elapsedOn(A.toolItem, "zsToolT0", A.toolStart).toFixed(1);
+      const s = elapsedOn(A.toolItem, "ai2robloxToolT0", A.toolStart).toFixed(1);
       setChipDetail(A.toolItem, (A.toolArg ? A.toolArg + " · " : "") + `${s}s`);
       return;
     }
@@ -4000,14 +4000,14 @@
     if (gen) {
       const item = P.lastAssistant();
       const reply = item ? P.itemText(item) : ""; // non-thinking only
-      const zphase = item && item.dataset.zphase;
+      const ai2robloxPhase = item && item.dataset.ai2robloxPhase;
       // Skip items already settled (done/err) - don't overwrite the finished chip.
-      if (item && zphase !== "done" && zphase !== "err" && ZSParse.hasToolSignature(reply)) {
+      if (item && ai2robloxPhase !== "done" && ai2robloxPhase !== "err" && AI2RobLoxParse.hasToolSignature(reply)) {
         // Live-correct the label as soon as the real name streams in.
-        const name = ZSParse.toolNameFromText(reply);
+        const name = AI2RobLoxParse.toolNameFromText(reply);
         if (name && name !== "command") setChipLabel(item, name);
         const tokens = Math.floor(reply.length / TOKEN_CHARS);
-        const s = Math.round(elapsedOn(item, "zsGenT0"));
+        const s = Math.round(elapsedOn(item, "ai2robloxGenT0"));
         setChipDetail(item, `~${formatCount(tokens)} tokens · ${s}s`);
         return;
       }
@@ -4019,10 +4019,10 @@
   // ════════════════════════════════════════════════════════════════════════
 
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg && msg.type === "zs-status") {
+    if (msg && msg.type === "ai2roblox-status") {
       ui.setStatus({ connected: msg.connected, mcpAlive: msg.mcpAlive, studio: msg.studio, studioApp: msg.studioApp, studioProc: msg.studioProc, tools: msg.tools, servers: msg.servers });
     }
-    if (msg && msg.type === "zs-open-menu") {
+    if (msg && msg.type === "ai2roblox-open-menu") {
       ui.openMenu(false); // from the popup's Settings button — opens at the top (Switch AI / custom prompt)
     }
   });
@@ -4066,25 +4066,25 @@
     if (!path) return;
     if (startedSessions.has(path)) return;
     startedSessions.add(path);
-    try { chrome.storage.local.set({ zsStartedSessions: [...startedSessions].slice(-300) }); } catch {}
+    try { chrome.storage.local.set({ ai2robloxStartedSessions: [...startedSessions].slice(-300) }); } catch {}
   }
   // Load the persisted set once, then re-sync.
   try {
-    chrome.storage.local.get("zsStartedSessions", (r) => {
-      if (r && Array.isArray(r.zsStartedSessions)) {
-        for (const p of r.zsStartedSessions) startedSessions.add(p);
+    chrome.storage.local.get("ai2robloxStartedSessions", (r) => {
+      if (r && Array.isArray(r.ai2robloxStartedSessions)) {
+        for (const p of r.ai2robloxStartedSessions) startedSessions.add(p);
         syncSessionState();
       }
     });
   } catch {}
-  // A conversation IS a ZeroScript session if any rendered turn carries a
+  // A conversation IS an AI2RobLox session if any rendered turn carries a
   // telltale artefact: the system-prompt marker, an injected tool-result /
-  // system-note turn, or a ZeroScript command an assistant wrote. Works even
+  // system-note turn, or an AI2RobLox command an assistant wrote. Works even
   // after a full cold start and regardless of scroll position.
   function domHasZsSignal() {
     for (const it of P.allItems()) {
       const txt = it.textContent || "";
-      if (txt.includes(ZS.SYS_MARKER)) return true;
+      if (txt.includes(AI2RobLox.SYS_MARKER)) return true;
       if (/(^|\n)\s*Output of '[^']+':/.test(txt) || txt.includes("(System note:")) return true;
       // Deliberately NO bare command-shape test here. An assistant turn that
       // merely CONTAINS {"command":...} / ###LUA### is NOT proof of a session:
@@ -4097,7 +4097,7 @@
       // always followed by our injected "Output of '...'" feedback turn, which
       // the test above already catches. Virtualization (the marker turns
       // scrolling out of the DOM) is covered by the persisted per-conversation
-      // key set (startedSessions / zsStartedSessions in rememberSession), not
+      // key set (startedSessions / ai2robloxStartedSessions in rememberSession), not
       // by this heuristic.
     }
     return false;
@@ -4129,7 +4129,7 @@
       }
     }
     // Same idea for a RUNNING loop: if the user opens a NEW, empty conversation
-    // via the SITE's own new-chat (not ZeroScript's button), the loop is bound to
+    // via the SITE's own new-chat (not AI2RobLox's button), the loop is bound to
     // a chat the user left, so abandon it. Otherwise A.running keeps this function
     // early-returning below and the stale "Agent active" / Stop button lingers on
     // the fresh chat instead of "Start Roblox agent". The "/app" → "/app/<id>" id
@@ -4206,19 +4206,19 @@
     if (A.injectHideUntil && Date.now() < A.injectHideUntil) {
       const users = items.filter((it) => P.isUserItem(it));
       const last = users[users.length - 1];
-      if (last && !last.classList.contains("zs-hidden") &&
+      if (last && !last.classList.contains("ai2roblox-hidden") &&
           users.length > (A.injectPreUser || 0)) {
-        last.classList.add("zs-hidden");
+        last.classList.add("ai2roblox-hidden");
         A.injectHideUntil = 0; // one-shot: this turn is now masked
         diag("result.prehide", { users: users.length });
       }
     }
     for (const item of items) {
-      if (item.classList.contains("zs-hidden")) continue;
-      const txt = P.classifyText(item, ".zs-chip");
-      if (txt.includes(ZS.SYS_MARKER) ||
-          (P.isUserItem(item) && ZSParse.isInjectedFeedback(txt))) {
-        item.classList.add("zs-hidden");
+      if (item.classList.contains("ai2roblox-hidden")) continue;
+      const txt = P.classifyText(item, ".ai2roblox-chip");
+      if (txt.includes(AI2RobLox.SYS_MARKER) ||
+          (P.isUserItem(item) && AI2RobLoxParse.isInjectedFeedback(txt))) {
+        item.classList.add("ai2roblox-hidden");
       }
     }
   }
@@ -4275,7 +4275,7 @@
       A.userStopped = false;
       A.stop = false;
       const it = P.lastAssistant();   // a real resume → drop the stopped marker
-      if (it) { delete it.dataset.zStopped; forgetHalted(it); }
+      if (it) { delete it.dataset.ai2robloxStopped; forgetHalted(it); }
       diag("nativeContinue");
     },
   });
@@ -4288,7 +4288,7 @@
   //   • lastGenAt recency - only resume a turn from a generation in the last
   //     few seconds; a turn rendered by load/scroll has no recent generation.
   //   • turnHalted - the turn itself carries the site's "stopped" marker.
-  // Each turn is still resumed at most once (zResume marker).
+  // Each turn is still resumed at most once (ai2robloxResume marker).
   // Freshness window for the resume watchdog. Widened from 8s to 3 minutes
   // (2026-08) because 8s was the ONLY thing standing between an orphaned command
   // and its execution, and it was firing on legitimate work: a long generation
@@ -4300,7 +4300,7 @@
   // nominally protecting: bootBaselineId (a reload-restored generation),
   // maxTurnId (a scrolled-back old turn), the result-below settled-history test
   // (survives a reload, unlike the executed map), the `executed` map, the
-  // zResume dedupe and A.userStopped. As the `executed` map's own comment puts
+  // ai2robloxResume dedupe and A.userStopped. As the `executed` map's own comment puts
   // it, re-execution is idempotent regardless of any lastGenAt misfire - "the
   // hard part (is this a live turn?) can be wrong without harm". The window is
   // kept, rather than removed, so a tab left open for hours still never
@@ -4313,7 +4313,7 @@
     if (P.isGenerating()) return;
     if (Date.now() - A.lastGenAt > RESUME_FRESH_MS) return; // not a fresh live turn
     const item = P.lastAssistant();
-    if (!item || item.dataset.zloop) return;
+    if (!item || item.dataset.ai2robloxLoop) return;
     // Never resume the turn that already existed when this session started - it is
     // a reload-restored generation, not a reply to one of our sends (see
     // A.bootBaselineId). Guards the "execute_luau leaked into the new chat" bug.
@@ -4344,9 +4344,9 @@
     const all = P.allItems();
     const after = all[all.indexOf(item) + 1];
     if (after && P.isUserItem(after) &&
-        ZSParse.isInjectedFeedback(P.classifyText(after, ".zs-chip"))) return;
+        AI2RobLoxParse.isInjectedFeedback(P.classifyText(after, ".ai2roblox-chip"))) return;
     const txt = P.itemText(item);
-    if (!ZSParse.hasToolSignature(txt)) return;
+    if (!AI2RobLoxParse.hasToolSignature(txt)) return;
     // Node-independent dedupe: this turn's command was already dispatched (by the
     // loop or a prior resume). The dataset guards below are wiped when the site
     // recreates the node on scroll, so without this off-DOM check the watchdog
@@ -4354,11 +4354,11 @@
     if (isRememberedExecuted(item, txt)) return;
     // Resume only when a COMPLETE, parseable command is present - and re-attempt
     // if the turn has GROWN since our last try.
-    if (!ZSParse.parseToolCalls(txt).length) return;
+    if (!AI2RobLoxParse.parseToolCalls(txt).length) return;
     const len = txt.length;
-    if (item.dataset.zResume && Number(item.dataset.zResumeLen || 0) >= len) return;
-    item.dataset.zResume = "1";
-    item.dataset.zResumeLen = String(len);
+    if (item.dataset.ai2robloxResume && Number(item.dataset.ai2robloxResumeLen || 0) >= len) return;
+    item.dataset.ai2robloxResume = "1";
+    item.dataset.ai2robloxResumeLen = String(len);
     rememberExecuted(item);
     diag("autoResume", { len });
     // The reply turn is ALREADY present - act on it immediately. Null token makes
@@ -4404,5 +4404,5 @@
     }
   }, 5000);
 
-  log(`ZeroScript content script ready (provider: ${P.id})`);
+  log(`AI2RobLox content script ready (provider: ${P.id})`);
 })();

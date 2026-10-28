@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/kimi.js - the Kimi (www.kimi.ai, Moonshot AI) provider.
-// Exports the same ZSProvider interface as providers/deepseek.js and gemini.js;
+// Exports the same AI2RobLoxProvider interface as providers/deepseek.js and gemini.js;
 // the core (core/main.js) is provider-agnostic. To DISABLE Kimi support, remove
 // this file from manifest.json (and its URL from background.js PROVIDER_URLS +
 // main.js AI_SITES).
@@ -25,7 +25,7 @@
 //    CodeMirror virtualization), so the command JSON survives intact.
 //  - Conversation URL is /chat/<id>; a fresh chat is exactly "/".
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -104,7 +104,7 @@ const ZSProvider = (() => {
   // Walk an element's text, skipping our own chip and any excluded subtree.
   function textWithout(root, excludeSel) {
     if (!root) return "";
-    const skip = ".zs-chip" + (excludeSel ? ", " + excludeSel : "");
+    const skip = ".ai2roblox-chip" + (excludeSel ? ", " + excludeSel : "");
     let t = "";
     const walk = (n) => {
       if (n.nodeType === 3) { t += n.nodeValue; return; }
@@ -145,19 +145,19 @@ const ZSProvider = (() => {
   const assistantItems = () => [...document.querySelectorAll(S.assistantItem)];
   const assistantCount = () => assistantItems().length;
   const userCount = () => document.querySelectorAll(S.userItem).length;
-  // Scope to the SITE's composer only: skip ZeroScript's own injected UI (the
-  // settings textarea #zs-set-text in #zs-root). On login/OAuth pages with no
+  // Scope to the SITE's composer only: skip AI2RobLox's own injected UI (the
+  // settings textarea #ai2roblox-set-text in #ai2roblox-root). On login/OAuth pages with no
   // site editor this returns null, keeping the "not on a chat page" guard in
   // the send hooks intact (otherwise our own textarea would defeat it and the
   // hooks could swallow the site's login button).
   const getEditor = () => {
     const site = [...document.querySelectorAll(S.editor)].filter(
-      (e) => !e.closest("#zs-root")
+      (e) => !e.closest("#ai2roblox-root")
     );
     // Prefer the bottom composer over the inline message-EDIT box. Editing a turn
     // mounts a second .chat-input-editor up in the message list; it precedes the
     // composer in DOM order, so the old "first editor" pick returned it - and
-    // barAnchor() then hugged the fixed ZeroScript bar over the editor. The real
+    // barAnchor() then hugged the fixed AI2RobLox bar over the editor. The real
     // composer lives inside the `.chat-editor` card; the edit box does not.
     return site.find((e) => e.closest(".chat-editor")) || site[0] || null;
   };
@@ -198,10 +198,10 @@ const ZSProvider = (() => {
 
   // Deliberately NO barMount(): an in-flow mount (as DeepSeek/Gemini do) is
   // unsafe on Kimi because every candidate parent is inside Vue's reconciled
-  // subtree - inserting our foreign #zs-bar into `.chat-editor` makes Vue's next
+  // subtree - inserting our foreign #ai2roblox-bar into `.chat-editor` makes Vue's next
   // diff reuse the bar node as a host and nest the composer editor INSIDE it,
   // breaking typing entirely (observed live). Instead we expose barAnchor():
-  // the core keeps the bar in its own #zs-root (position:fixed) but positions it
+  // the core keeps the bar in its own #ai2roblox-root (position:fixed) but positions it
   // to hug the composer card's top edge at full width and reserves that strip
   // with padding-top, giving the integrated DeepSeek look with zero DOM
   // insertion into Vue's tree. The element to hug is the rounded composer card
@@ -288,7 +288,7 @@ const ZSProvider = (() => {
     _locked = on;
     const ed = getEditor();
     if (on) {
-      if (ed) { ed.setAttribute("contenteditable", "false"); ed.setAttribute("data-zs-locked", "1"); }
+      if (ed) { ed.setAttribute("contenteditable", "false"); ed.setAttribute("data-ai2roblox-locked", "1"); }
       applyLockedPlaceholder();
       // Vue recreates the placeholder node after each inject/clear cycle, so watch
       // the composer subtree and re-assert our text the instant it reappears (no
@@ -302,7 +302,7 @@ const ZSProvider = (() => {
     } else {
       if (_phObs) { try { _phObs.disconnect(); } catch {} _phObs = null; }
       if (_phTimer) { clearInterval(_phTimer); _phTimer = null; }
-      if (ed) { ed.setAttribute("contenteditable", "true"); ed.removeAttribute("data-zs-locked"); }
+      if (ed) { ed.setAttribute("contenteditable", "true"); ed.removeAttribute("data-ai2roblox-locked"); }
       // Restore the site's own placeholder text on whatever node is current now.
       const ph = placeholderEl();
       if (ph && _origPlaceholder != null) ph.textContent = _origPlaceholder;
@@ -330,7 +330,7 @@ const ZSProvider = (() => {
   // ── Generation detection ──────────────────────────────────────────────────
   function streamText(item) {
     const md = bodyEl(item);
-    return md ? textWithout(md, ".zs-chip") : "";
+    return md ? textWithout(md, ".ai2roblox-chip") : "";
   }
   const streamLen = (item) =>
     streamText(item === undefined ? lastAssistant() : item).length;
@@ -446,22 +446,22 @@ const ZSProvider = (() => {
   }
 
   // Kimi's own agentic mode (see S.currentModelName above) makes the model favor
-  // its built-in tools over the ZeroScript command protocol. On K3 the only
+  // its built-in tools over the AI2RobLox command protocol. On K3 the only
   // remaining signal is the model-selector label.
   function nativeAgentModeOn() {
     const m = document.querySelector(S.currentModelName);
     // "K3 Swarm" (current) or "…Agent" (older builds). Both make Kimi reach for
-    // its own tooling instead of emitting ZeroScript command blocks.
+    // its own tooling instead of emitting AI2RobLox command blocks.
     return !!(m && /swarm|agent/i.test(m.textContent || ""));
   }
-  // Visible mode guard for the ZeroScript bar (core renderBar reads this every
+  // Visible mode guard for the AI2RobLox bar (core renderBar reads this every
   // sweep, same mechanism as arena.js's modeWarning). Returns a warning string
   // while Kimi's native Agent mode is on, "" otherwise. The core turns this
   // into a red warning state and disables Start until the user switches it off.
   function modeWarning() {
     if (nativeAgentModeOn())
       return `Switch the model picker off <b>K3 Swarm</b> (pick <b>K3</b> or <b>Instantané</b>) - ` +
-        `Kimi's own agentic mode replaces the ZeroScript commands with its native tools and breaks the agent loop.`;
+        `Kimi's own agentic mode replaces the AI2RobLox commands with its native tools and breaks the agent loop.`;
     return "";
   }
 
@@ -480,7 +480,7 @@ const ZSProvider = (() => {
   const MODAL_MASK_SEL = ".login-modal-mask, .modal-mask";
   function overlayBlocking() {
     for (const mask of document.querySelectorAll(MODAL_MASK_SEL)) {
-      if (mask.closest("#zs-root")) continue;
+      if (mask.closest("#ai2roblox-root")) continue;
       const s = getComputedStyle(mask);
       if (s.display === "none" || s.visibility === "hidden" || parseFloat(s.opacity) === 0) continue;
       const r = mask.getBoundingClientRect();
@@ -490,7 +490,7 @@ const ZSProvider = (() => {
   }
 
   // ── Default the model on a fresh chat ─────────────────────────────────────
-  // Pick a model that actually speaks the ZeroScript command protocol, ONCE,
+  // Pick a model that actually speaks the AI2RobLox command protocol, ONCE,
   // whenever we arrive on an empty chat (page load OR "New Chat"). Not enforced
   // every sweep: if the user deliberately switches afterwards on that same empty
   // chat, we leave it - we only re-arm on a transition INTO a new empty chat.
@@ -709,7 +709,7 @@ const ZSProvider = (() => {
   // survive in textContent). Vue re-renders the markdown subtree on stream
   // updates, so - like Gemini - hide every `.segment-code` in the reply carrying
   // a command shape AND mark the assistant turn (.segment-assistant, which keeps
-  // its identity) with .zs-cmd-mask so the overlay.css rule re-hides recreated
+  // its identity) with .ai2roblox-cmd-mask so the overlay.css rule re-hides recreated
   // wrappers with zero flash. Also catch a stray bare inline command paragraph.
   const CMD_SHAPE = /"(?:command|tool)"\s*:\s*"|###\s*lua|###mcp_tool###/i;
   // A block whose text STARTS with a command (optionally behind a ```json fence).
@@ -722,20 +722,20 @@ const ZSProvider = (() => {
     if (!md) return null;
     let hidAny = null;
     md.querySelectorAll(S.codeWrap).forEach((cw) => {
-      if (cw.closest(".zs-chip") || cw.closest(S.thinking)) return; // never a drafted-in-reasoning block
+      if (cw.closest(".ai2roblox-chip") || cw.closest(S.thinking)) return; // never a drafted-in-reasoning block
       if (CMD_SHAPE.test(cw.textContent || "")) {
-        cw.classList.add("zs-tool-hide");
-        item.classList.add("zs-cmd-mask");
+        cw.classList.add("ai2roblox-tool-hide");
+        item.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: cw.parentElement, ref: cw };
       }
     });
     [...md.children].forEach((el) => {
-      if (el.classList.contains("zs-chip") || el.closest(S.codeWrap) ||
+      if (el.classList.contains("ai2roblox-chip") || el.closest(S.codeWrap) ||
           el.matches(S.thinking) || el.querySelector(S.thinking) ||
           el.querySelector(S.codeWrap)) return;
       const t = el.textContent || "";
       if (t.length < 600 && CMD_SHAPE.test(t)) {
-        el.classList.add("zs-tool-hide");
+        el.classList.add("ai2roblox-tool-hide");
         hidAny = hidAny || { parent: el.parentElement, ref: el };
       }
     });
@@ -747,11 +747,11 @@ const ZSProvider = (() => {
     // and hide any whose text STARTS with a command (so it IS the command, never a
     // prose answer that merely quotes one), at any length.
     md.querySelectorAll(".paragraph, p").forEach((el) => {
-      if (el.classList.contains("zs-tool-hide") || el.closest(".zs-chip") ||
+      if (el.classList.contains("ai2roblox-tool-hide") || el.closest(".ai2roblox-chip") ||
           el.closest(S.codeWrap) || el.closest(S.thinking)) return;
       if (STARTS_CMD.test((el.textContent || "").trim())) {
-        el.classList.add("zs-tool-hide");
-        item.classList.add("zs-cmd-mask");
+        el.classList.add("ai2roblox-tool-hide");
+        item.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: el.parentElement, ref: el };
       }
     });
@@ -764,7 +764,7 @@ const ZSProvider = (() => {
     // Confirmed live: Kimi (K2.6) reads attached images - it correctly described
     // a test screenshot's content. So screen_capture is exposed here (see main.js
     // BLOCKED_TOOLS gate); attachImages uploads via the toolkit file input, and
-    // the capture is shown in the core's left-hand ZeroScript popup (ui.showImages).
+    // the capture is shown in the core's left-hand AI2RobLox popup (ui.showImages).
     supportsVision: true,
     timings,
     // Reasoning-area selector, exported so the CORE's raw-command-visible probes
@@ -788,13 +788,13 @@ const ZSProvider = (() => {
     // Turns accumulate and are not virtualized for normal lengths, so
     // assistantCount() reliably increases for every reply.
     reliableCounts: true,
-    // Shown as a permanent, non-intrusive notice in the ZeroScript panel.
+    // Shown as a permanent, non-intrusive notice in the AI2RobLox panel.
     // Kimi sometimes reaches for its OWN built-in/native tools (web search, code
-    // runner, etc.) instead of emitting the ZeroScript command blocks that drive
+    // runner, etc.) instead of emitting the AI2RobLox command blocks that drive
     // Roblox Studio - model behavior, not something the prompt fully prevents.
     unstableWarning:
       "Kimi sometimes uses its own native tools instead of the Roblox commands (model behavior, not the extension). " +
-      "If it stops acting in Roblox Studio and answers in plain text or runs its own tools, remind it to use the ZeroScript commands - or start a new session.",
+      "If it stops acting in Roblox Studio and answers in plain text or runs its own tools, remind it to use the AI2RobLox commands - or start a new session.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,

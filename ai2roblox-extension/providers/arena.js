@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/arena.js - the Arena (arena.ai) provider.
-// Exports the same ZSProvider interface as providers/deepseek.js; the core
+// Exports the same AI2RobLoxProvider interface as providers/deepseek.js; the core
 // (core/main.js) is provider-agnostic. To DISABLE Arena support, remove this
 // file from manifest.json (and its URL from background.js PROVIDER_URLS).
 //
@@ -16,7 +16,7 @@
 //    and its header reads "Response provided by <vendor>" ABOVE the .prose body
 //    (we read ONLY .prose, so that header never counts as model output).
 //  - Fenced code is a REAL <pre> (textContent preserves newlines - no
-//    CodeMirror/Monaco), wrapped in a <div class="not-prose">. ZeroScript's
+//    CodeMirror/Monaco), wrapped in a <div class="not-prose">. AI2RobLox's
 //    command markers/JSON survive intact in textContent.
 //  - The composer is a real <textarea> inside a <form> (the ONLY form textarea;
 //    other page textareas are recaptcha/aria-hidden). We set its .value via the
@@ -25,7 +25,7 @@
 //    by an aria-label "Stop generation" button for the WHOLE generation.
 //  - Conversation URL is /c/<uuid>; a fresh chat is /text/direct (no id yet).
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -190,7 +190,7 @@ const ZSProvider = (() => {
   // Walk the tree skipping the core's chip (and any extra excluded subtree).
   function textWithout(root, excludeSel) {
     if (!root) return "";
-    const skip = ".zs-chip" + (excludeSel ? ", " + excludeSel : "");
+    const skip = ".ai2roblox-chip" + (excludeSel ? ", " + excludeSel : "");
     let t = "";
     const walk = (n) => {
       if (n.nodeType === 3) { t += n.nodeValue; return; }
@@ -225,12 +225,12 @@ const ZSProvider = (() => {
   const userCount = () => allItems().filter(isUserItem).length;
 
   // The composer textarea = the ONLY <textarea> inside a <form> (other page
-  // textareas are recaptcha/aria-hidden). Scope away ZeroScript's own settings
-  // textarea (#zs-root) so the send hooks' "not on a chat page" guard holds on
+  // textareas are recaptcha/aria-hidden). Scope away AI2RobLox's own settings
+  // textarea (#ai2roblox-root) so the send hooks' "not on a chat page" guard holds on
   // login/OAuth pages that have no site composer.
   const getEditor = () => {
     for (const e of document.querySelectorAll("form textarea")) {
-      if (!e.closest("#zs-root")) return e;
+      if (!e.closest("#ai2roblox-root")) return e;
     }
     return null;
   };
@@ -275,9 +275,9 @@ const ZSProvider = (() => {
   };
 
   // Arena is a React app that reconciles the composer subtree, so we must NOT
-  // insert #zs-bar into it (the diff could nest the composer inside the bar, as
+  // insert #ai2roblox-bar into it (the diff could nest the composer inside the bar, as
   // seen on Kimi/GLM). barAnchor() returns the rounded composer CARD; the core
-  // (placeBar anchored branch) keeps the bar in #zs-root, hugs the card's top
+  // (placeBar anchored branch) keeps the bar in #ai2roblox-root, hugs the card's top
   // edge at full width and reserves the strip with padding-top.
   function barAnchor() {
     const ed = getEditor();
@@ -299,12 +299,12 @@ const ZSProvider = (() => {
     const ed = getEditor();
     if (!ed) return;
     if (on) {
-      if (!ed.dataset.zsPlaceholder) ed.dataset.zsPlaceholder = ed.getAttribute("placeholder") || "";
+      if (!ed.dataset.ai2robloxPlaceholder) ed.dataset.ai2robloxPlaceholder = ed.getAttribute("placeholder") || "";
       ed.setAttribute("readonly", "");
       ed.setAttribute("placeholder", "⏳ Agent working… please wait");
     } else {
       ed.removeAttribute("readonly");
-      if (ed.dataset.zsPlaceholder != null) ed.setAttribute("placeholder", ed.dataset.zsPlaceholder);
+      if (ed.dataset.ai2robloxPlaceholder != null) ed.setAttribute("placeholder", ed.dataset.ai2robloxPlaceholder);
     }
   }
 
@@ -323,7 +323,7 @@ const ZSProvider = (() => {
   function streamText(item) {
     if (!item) return "";
     const md = proseOf(item);
-    return md ? textWithout(md, ".zs-chip") : "";
+    return md ? textWithout(md, ".ai2roblox-chip") : "";
   }
   const streamLen = (item) => streamText(item === undefined ? lastAssistant() : item).length;
 
@@ -377,7 +377,7 @@ const ZSProvider = (() => {
     const md = proseOf(item);
     return {
       present: true,
-      reply: md ? textWithout(md, ".zs-chip").trim() : "",
+      reply: md ? textWithout(md, ".ai2roblox-chip").trim() : "",
       thinking: "",
       item,
     };
@@ -406,7 +406,7 @@ const ZSProvider = (() => {
     if (!text || text.length <= SEND_CAP) return text;
     const omitted = text.length - SEND_MAX;
     const marker =
-      `\n\n[…ZeroScript: result truncated to fit Arena's input limit - ` +
+      `\n\n[…AI2RobLox: result truncated to fit Arena's input limit - ` +
       `${omitted} of ${text.length} characters omitted…]\n\n`;
     const budget = SEND_MAX - marker.length;
     const headLen = Math.floor(budget * 0.85);
@@ -514,7 +514,7 @@ const ZSProvider = (() => {
   // Arena has four chat modes (the conversation-mode dropdown): Direct (1 model),
   // Battle Mode (2 anonymous models → always an A/B comparison), Side by Side
   // (2 chosen models → also A/B), and Agent Mode (autonomous, single model).
-  // ZeroScript only supports DIRECT. Battle / Side by Side force a fresh A/B
+  // AI2RobLox only supports DIRECT. Battle / Side by Side force a fresh A/B
   // comparison on EVERY turn. Agent Mode is a SEPARATE app (route /agent, a
   // TipTap/ProseMirror contenteditable composer with NO <form>, and NO <ol>
   // message list) on which every DOM assumption here breaks - getEditor() returns
@@ -572,7 +572,7 @@ const ZSProvider = (() => {
 
   // ── One-shot: restore Direct on page load ──────────────────────────────────
   // Arena sometimes reloads into Battle mode (e.g. after a login/OAuth round-trip
-  // bounces the tab), which ZeroScript can't drive. We nudge the mode dropdown
+  // bounces the tab), which AI2RobLox can't drive. We nudge the mode dropdown
   // back to Direct ONCE per page load - never on a sweep, so a user who later
   // deliberately picks another mode is not fought (the mode guard/warning still
   // covers that case). We only touch the plain chat route and only when the
@@ -603,7 +603,7 @@ const ZSProvider = (() => {
     if (!ok && combo.getAttribute("aria-expanded") === "true") { try { combo.click(); } catch {} } // reclose on failure
   }
 
-  // Visible mode guard for the ZeroScript bar (core renderBar reads this every
+  // Visible mode guard for the AI2RobLox bar (core renderBar reads this every
   // sweep). Returns a warning string while an unsupported mode (Battle / Side by
   // Side / Agent) is selected, "" when Direct (or mode unknown → fail open so a
   // DOM reskin never nags on the supported default). The core turns this into a
@@ -612,18 +612,18 @@ const ZSProvider = (() => {
     const um = activeUnsupportedMode();
     if (um)
       return `Turn off <b>${um.label}</b> (${um.tip} in the composer) - ` +
-        `ZeroScript only works in plain chat. ${um.label} mode uses a different ` +
+        `AI2RobLox only works in plain chat. ${um.label} mode uses a different ` +
         `output surface and breaks the agent loop.`;
     if (isSupportedMode()) return "";
     const m = currentMode();
     const name = m ? m.charAt(0).toUpperCase() + m.slice(1) : "another mode";
-    return `Switch the mode dropdown to <b>Direct</b> - ZeroScript only works in ` +
+    return `Switch the mode dropdown to <b>Direct</b> - AI2RobLox only works in ` +
       `Direct mode (current: <b>${name}</b>).`;
   }
 
   // A bot-check challenge is on screen (Cloudflare Turnstile / hCaptcha /
   // reCAPTCHA). We NEVER interact with it: the core reads this only to move the
-  // ZeroScript bar out of the way: the anchored bar is transparent but still a
+  // AI2RobLox bar out of the way: the anchored bar is transparent but still a
   // real, full-width element over the composer's top edge, so it silently eats
   // clicks on the challenge's "Valider" button even though nothing is visible.
   const CAPTCHA_SEL =
@@ -654,15 +654,15 @@ const ZSProvider = (() => {
 
   // A modal dialog (login / create-account / consent) is open over the page.
   // Arena renders these as Radix dialogs = a visible [role="dialog"]. While one is
-  // up, the anchored ZeroScript bar (a real, full-width element hugging the
+  // up, the anchored AI2RobLox bar (a real, full-width element hugging the
   // composer's top edge) sits ON TOP of the modal and silently intercepts clicks
   // on its buttons - e.g. "Continue with Google" at sign-in. The core hides the
   // bar whenever this is true (same get-out-of-the-way path as captchaPresent).
   // reallyVisible() ignores display:none / detached closed dialogs, so a chat page
-  // with no open modal never matches. Our own UI lives in #zs-root and is skipped.
+  // with no open modal never matches. Our own UI lives in #ai2roblox-root and is skipped.
   function overlayBlocking() {
     for (const d of document.querySelectorAll('[role="dialog"]')) {
-      if (d.closest("#zs-root")) continue;
+      if (d.closest("#ai2roblox-root")) continue;
       if (reallyVisible(d)) return true;
     }
     return false;
@@ -822,9 +822,9 @@ const ZSProvider = (() => {
   // <div class="not-prose"> (markers/JSON intact in textContent). Hide every
   // such wrapper carrying a command shape, plus any bare top-level block holding
   // an inline command. React recreates the rendered subtree on stream settle and
-  // on the next send (wiping per-element .zs-tool-hide), so also mark the turn
+  // on the next send (wiping per-element .ai2roblox-tool-hide), so also mark the turn
   // (its identity survives - the chip is anchored at item level) with
-  // .zs-cmd-mask; the overlay.css rule keeps recreated code wrappers hidden.
+  // .ai2roblox-cmd-mask; the overlay.css rule keeps recreated code wrappers hidden.
   const CMD_SHAPE = /"(?:command|tool)"\s*:\s*"|###\s*lua|###mcp_tool###/i;
   function findToolBlockSpot(item /*, chip */) {
     const md = proseOf(item);
@@ -832,20 +832,20 @@ const ZSProvider = (() => {
     let hidAny = null;
     // 1. Fenced code wrappers carrying a command.
     md.querySelectorAll(S.codeWrap).forEach((cw) => {
-      if (cw.closest(".zs-chip")) return;
+      if (cw.closest(".ai2roblox-chip")) return;
       if (CMD_SHAPE.test(cw.textContent || "")) {
-        cw.classList.add("zs-tool-hide");
-        item.classList.add("zs-cmd-mask");
+        cw.classList.add("ai2roblox-tool-hide");
+        item.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: cw.parentElement, ref: cw };
       }
     });
     // 2. Bare top-level blocks with an inline command (no code wrapper inside).
     [...md.children].forEach((el) => {
-      if (el.classList.contains("zs-chip") || el.querySelector(S.codeWrap)) return;
+      if (el.classList.contains("ai2roblox-chip") || el.querySelector(S.codeWrap)) return;
       const t = el.textContent || "";
       if (t.length < 600 && CMD_SHAPE.test(t)) {
-        el.classList.add("zs-tool-hide");
-        item.classList.add("zs-cmd-mask");
+        el.classList.add("ai2roblox-tool-hide");
+        item.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: el.parentElement, ref: el };
       }
     });

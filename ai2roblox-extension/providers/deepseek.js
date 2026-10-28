@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/deepseek.js - the DeepSeek (chat.deepseek.com) provider.
 // EVERYTHING that knows DeepSeek's DOM, quirks, and UI strings lives here; the
-// core (core/main.js) only ever talks to the ZSProvider interface this file
+// core (core/main.js) only ever talks to the AI2RobLoxProvider interface this file
 // exports. To support another AI site, write a sibling file exporting the same
 // interface and list it (instead of this one) in the manifest's content_scripts.
 //
@@ -19,7 +19,7 @@
 //    REASONING phase there is NO stop button / spinner at all - only text growth
 //    says "still alive".
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -136,20 +136,20 @@ const ZSProvider = (() => {
   const assistantItems = () => allItems().filter(isAssistantItem);
   const assistantCount = () => assistantItems().length;
   const userCount = () => allItems().filter(isUserItem).length;
-  // Scope to the SITE's composer only: never match ZeroScript's own injected
-  // UI (e.g. the settings textarea #zs-set-text in #zs-root). Otherwise on the
+  // Scope to the SITE's composer only: never match AI2RobLox's own injected
+  // UI (e.g. the settings textarea #ai2roblox-set-text in #ai2roblox-root). Otherwise on the
   // login/OAuth pages - which have no site textarea - getEditor() would return
   // our own panel's textarea, defeating the "not on a chat page" guard in the
   // send hooks and letting them swallow the DeepSeek "Log in" click (which is
   // itself a .ds-button--primary, the same selector as the send button).
   const getEditor = () => {
     const site = [...document.querySelectorAll(S.editor)].filter(
-      (e) => !e.closest("#zs-root")
+      (e) => !e.closest("#ai2roblox-root")
     );
     // Prefer the bottom composer over the inline message-EDIT box. When the user
     // edits a turn, DeepSeek mounts a bordered .ds-textarea up in the turn list;
     // it precedes the composer in DOM order, so the old "first textarea" pick
-    // returned it - and barMount() then dragged the whole ZeroScript bar INTO the
+    // returned it - and barMount() then dragged the whole AI2RobLox bar INTO the
     // editor. Skip any textarea inside that DS component; the composer isn't one.
     return site.find((e) => !e.closest(S.msgEditBox)) || site[0] || null;
   };
@@ -167,12 +167,12 @@ const ZSProvider = (() => {
     const ed = getEditor();
     if (!ed) return;
     if (on) {
-      if (!ed.dataset.zsPlaceholder) ed.dataset.zsPlaceholder = ed.getAttribute("placeholder") || "";
+      if (!ed.dataset.ai2robloxPlaceholder) ed.dataset.ai2robloxPlaceholder = ed.getAttribute("placeholder") || "";
       ed.setAttribute("readonly", "");
       ed.setAttribute("placeholder", "⏳ Agent working… please wait");
     } else {
       ed.removeAttribute("readonly");
-      if (ed.dataset.zsPlaceholder != null) ed.setAttribute("placeholder", ed.dataset.zsPlaceholder);
+      if (ed.dataset.ai2robloxPlaceholder != null) ed.setAttribute("placeholder", ed.dataset.ai2robloxPlaceholder);
     }
   }
 
@@ -261,7 +261,7 @@ const ZSProvider = (() => {
     // Insert before the first REAL child (skip our own bar if already mounted,
     // otherwise we'd try to insert the bar before itself every frame).
     let before = box.firstElementChild;
-    if (before && before.id === "zs-bar") before = before.nextElementSibling;
+    if (before && before.id === "ai2roblox-bar") before = before.nextElementSibling;
     return { parent: box, before, inside: true }; // lives INSIDE the input box
   }
 
@@ -371,7 +371,7 @@ const ZSProvider = (() => {
     // We only DRIVE the composer when given a reason (i.e. at session startup).
     // Per-sweep calls pass no reason and are READ-ONLY: that leaves the user free
     // to switch the model tab afterwards (e.g. Expert → Instant to turn thinking
-    // off) without ZeroScript reverting their choice every frame.
+    // off) without AI2RobLox reverting their choice every frame.
     if (!reason) return composerModeState();
     try {
       // Pick the most powerful model for the agent: Expert (deep reasoning). In
@@ -461,7 +461,7 @@ const ZSProvider = (() => {
     const think = item.querySelector(S.thinking);
     const thinkTxt = think ? think.textContent || "" : "";
     const replyTxt = [...item.querySelectorAll(S.markdown)]
-      .filter((m) => !m.closest(S.thinking) && !m.closest(".zs-chip"))
+      .filter((m) => !m.closest(S.thinking) && !m.closest(".ai2roblox-chip"))
       .map((m) => m.textContent)
       .join("");
     return thinkTxt + "\n" + replyTxt;
@@ -496,7 +496,7 @@ const ZSProvider = (() => {
     const thinkTxt = think ? (think.textContent || "") : "";
     if (!thinkTxt.trim().length) return false; // not reasoning
     const replyLen = [...item.querySelectorAll(S.markdown)]
-      .filter((m) => !m.closest(S.thinking) && !m.closest(".zs-chip"))
+      .filter((m) => !m.closest(S.thinking) && !m.closest(".ai2roblox-chip"))
       .reduce((n, m) => n + (m.textContent || "").length, 0);
     if (replyLen !== 0) return false; // already answering
     if (turnHalted(item)) return false; // halted (manual / forced stop)
@@ -581,7 +581,7 @@ const ZSProvider = (() => {
       if (!it) return { th: 0, rp: 0 };
       const th = it.querySelector(S.thinking);
       const rp = [...it.querySelectorAll(S.markdown)]
-        .filter((m) => !m.closest(S.thinking) && !m.closest(".zs-chip"))
+        .filter((m) => !m.closest(S.thinking) && !m.closest(".ai2roblox-chip"))
         .reduce((n, m) => n + (m.textContent || "").length, 0);
       return { th: th ? (th.textContent || "").trim().length : 0, rp };
     } catch { return {}; }
@@ -670,7 +670,7 @@ const ZSProvider = (() => {
     if (!text || text.length <= SEND_MAX) return text;
     const omitted = text.length - SEND_MAX;
     const marker =
-      `\n\n[…ZeroScript: result truncated to fit DeepSeek's ${SEND_CAP}-character ` +
+      `\n\n[…AI2RobLox: result truncated to fit DeepSeek's ${SEND_CAP}-character ` +
       `input limit - ${omitted} of ${text.length} characters omitted. Do NOT re-run ` +
       `the command; work with the head and tail shown here…]\n\n`;
     const budget = SEND_MAX - marker.length;
@@ -825,7 +825,7 @@ const ZSProvider = (() => {
   // composer events (Enter key, send-button click, native stop / continue).
   // handlers = {
   //   isBlocked():bool        - agent busy (injecting/running/starting)
-  //   isStarted():bool        - a ZeroScript session exists in this chat
+  //   isStarted():bool        - an AI2RobLox session exists in this chat
   //   onBlockedAttempt()      - user tried to send before starting (fresh chat)
   //   onUserMessage(base)     - a genuine user message is being sent
   //   onNativeStop()          - user clicked the site's own stop button
@@ -896,11 +896,11 @@ const ZSProvider = (() => {
   // children from the start marker through the end marker. Returns where to
   // insert the chip: {parent, ref} - or null if no tool block was found.
   function findToolBlockSpot(item, chip) {
-    const P = ZSParse;
+    const P = AI2RobLoxParse;
     const hasStart = (t) => P.LUA_START_RE.test(t) || t.includes("###mcp_tool###");
     const hasEnd = (t) => P.LUA_END_RE.test(t) || t.includes("###end_mcp_tool###") || t.includes("###end-mcp_tool###");
     const isJson = (t) => /\{\s*"(?:command|tool)"\s*:/.test(t);
-    // DeepSeek's own DSML tool-call markup (see ZSParse.DSML_RE). It is NOT a
+    // DeepSeek's own DSML tool-call markup (see AI2RobLoxParse.DSML_RE). It is NOT a
     // fenced block and NOT JSON - it renders as ordinary prose paragraphs - so
     // neither predicate above matched it and nothing got hidden: the chip
     // appeared but the raw tags stayed on screen next to it (reported live
@@ -942,7 +942,7 @@ const ZSProvider = (() => {
           let hide = kids[k];
           const wrap = hide.closest("[class*='code'], .md-code-block");
           if (wrap && container.contains(wrap) && wrap !== container) hide = wrap;
-          hide.classList.add("zs-tool-hide");
+          hide.classList.add("ai2roblox-tool-hide");
           if (!ref && hide.parentElement) { parent = hide.parentElement; ref = hide; }
         }
         i = runEnd + 1;
@@ -970,9 +970,9 @@ const ZSProvider = (() => {
     init({ diag: d } = {}) {
       if (d) diag = d;
       // Version beacon: stamp the loaded build onto <html> so a reload can be
-      // confirmed from the page (read document.documentElement.dataset.zsDsVer).
+      // confirmed from the page (read document.documentElement.dataset.ai2robloxDsVer).
       // BUMP DS_VER on meaningful deepseek.js changes worth verifying live.
-      try { document.documentElement.setAttribute("data-zs-ds-ver", "2026-09_unified-model"); } catch {}
+      try { document.documentElement.setAttribute("data-ai2roblox-ds-ver", "2026-09_unified-model"); } catch {}
     },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,

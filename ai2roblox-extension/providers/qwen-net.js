@@ -2,7 +2,7 @@
 // providers/qwen-net.js - Qwen network tap (runs in the MAIN world).
 //
 // WHY THIS EXISTS: Qwen renders assistant replies (and the fenced code blocks
-// that carry ZeroScript commands) in a Monaco editor that DISPOSES off-screen
+// that carry AI2RobLox commands) in a Monaco editor that DISPOSES off-screen
 // blocks - collapsing them to their first line - and can drop the final complete
 // frame for short/fast blocks. Reading the command back from the DOM is therefore
 // unreliable (a `{"command":...}` becomes just `{`, a 50-line execute_luau becomes
@@ -14,7 +14,7 @@
 // It wraps window.fetch in the PAGE world (a content script's isolated-world
 // fetch wrap would not see the app's calls), accumulates the `answer`-phase delta
 // content per streamed response, and publishes the latest response's full text +
-// done flag into a DOM node (#zs-qwen-net, JSON textContent) that the isolated
+// done flag into a DOM node (#ai2roblox-qwen-net, JSON textContent) that the isolated
 // content script can read. Registered as a content script with "world": "MAIN",
 // run_at "document_start" so the wrap is installed before Qwen's app uses fetch.
 (() => {
@@ -22,7 +22,7 @@
   if (window.__zsQwenNet) return;
   window.__zsQwenNet = true;
 
-  const NODE_ID = "zs-qwen-net";
+  const NODE_ID = "ai2roblox-qwen-net";
   const node = () => {
     let n = document.getElementById(NODE_ID);
     if (!n) {

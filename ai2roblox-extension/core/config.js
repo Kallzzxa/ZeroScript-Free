@@ -3,19 +3,19 @@
 // feedback strings, tool categorisation. NOTHING in this file may reference a
 // specific AI site (DOM, selectors, site names) - that lives in providers/*.
 // eslint-disable-next-line no-unused-vars
-const ZS = (() => {
+const AI2RobLox = (() => {
   "use strict";
 
   // Display name + unique marker injected at the top of the system prompt so the
   // content script can reliably recognise (and camouflage) the bootstrap turn.
-  const APP_NAME = "ZeroScript";
-  const SYS_MARKER = "⟦ZS-SYS⟧";
+  const APP_NAME = "AI2RobLox";
+  const SYS_MARKER = "⟦AI2RobLox-SYS⟧";
   // A re-statement of the system prompt mid-session (see withSysResend in
   // core/main.js). It carries SYS_MARKER TOO - that is what drives camouflage
   // and session detection, and neither should change - plus this second marker,
   // purely so the chip can say "Reminder" instead of inheriting the bootstrap's
   // "Starting Up". Same content, different label: a re-injection is not a start.
-  const RESEND_MARKER = "⟦ZS-RE⟧";
+  const RESEND_MARKER = "⟦AI2RobLox-RE⟧";
 
   // ── Tool → visual category (icon + colour theme for the chips) ─────────
   // Roblox Studio MCP only. Returns one of:
@@ -53,12 +53,12 @@ const ZS = (() => {
       const objAlt = otherCmd ? "" : " (or ###...### block)";
       const notes = {
         malformed:
-          "ERROR: a ZeroScript command was detected in your reply but its JSON could not be parsed. " +
+          "ERROR: an AI2RobLox command was detected in your reply but its JSON could not be parsed. " +
           'Rewrite it as a single valid JSON object in plain text, exactly like {"command": "name", "params": {...}}' +
           luaMalformed + ". You may add a short note around it. " +
           "Please retry.",
         unclosed:
-          "ERROR: your ZeroScript command was cut off before it finished - the JSON object" +
+          "ERROR: your AI2RobLox command was cut off before it finished - the JSON object" +
           objAlt + " never closed, so it could not run. Rewrite the WHOLE command in one " +
           'piece as valid JSON, exactly like {"command": "name", "params": {...}}' +
           luaUnclosed + ". Please retry.",
@@ -73,7 +73,7 @@ const ZS = (() => {
           '"params". Please retry.',
         // The model named a REAL tool but under the wrong key - it wrote the call
         // the way a function-calling API would (e.g. {"toolName": "get_studio_state",
-        // "studio_id": "..."}) instead of ZeroScript's envelope. Seen live on
+        // "studio_id": "..."}) instead of AI2RobLox's envelope. Seen live on
         // ChatGPT in a long session. Naming the wrong keys explicitly matters: a
         // generic "bad JSON" note made the model rewrite the SAME shape.
         toolKey:
@@ -87,7 +87,7 @@ const ZS = (() => {
         // detector and loop the error forever. Describe it, don't reproduce it.
         dsml:
           "ERROR: you wrote that call in your own internal tool-call markup (the DSML invoke/parameter " +
-          "tags). ZeroScript cannot read that format, so the command did not run. Never use those tags " +
+          "tags). AI2RobLox cannot read that format, so the command did not run. Never use those tags " +
           "here. Write the call as a single plain-text JSON object instead, exactly like " +
           '{"command": "name", "params": { ...your parameters... }} - one command per reply. ' +
           "Please retry.",
@@ -117,13 +117,13 @@ const ZS = (() => {
     // burns the whole conversation re-issuing commands that can never run. See
     // isContextInvalidated in core/main.js.
     staleExtension:
-      "ERROR: the ZeroScript extension was reloaded or updated while this page was open, so this " +
+      "ERROR: the AI2RobLox extension was reloaded or updated while this page was open, so this " +
       "tab is running a version of it that no longer exists and NO command can reach the user's " +
       "machine from here. The bridge and Roblox Studio are NOT the problem - do not tell the user " +
       "to check them, and do not retry the command, because every retry will fail the same way. " +
       "Tell the user in one short sentence to RELOAD THIS PAGE (F5), then stop and wait.",
     bridgeOffline:
-      "ERROR: the local ZeroScript bridge is unreachable, so no command could run. " +
+      "ERROR: the local AI2RobLox bridge is unreachable, so no command could run. " +
       "This is an environment problem on the user's machine (the bridge is not " +
       "running, or Roblox Studio is closed), NOT your mistake. Tell the user in " +
       "one short sentence that the bridge or Roblox Studio is offline, then stop " +
@@ -169,12 +169,12 @@ const ZS = (() => {
     if (typeof opts === "string") opts = { siteName: opts };
     const { siteName = "this AI site", customPrompt = "", providerNotes = "" } = opts;
 
-    const prompt = `CONTEXT: the user has installed a browser extension called ZeroScript in their own browser. Here is how it works, so you can use it on their behalf:
-A browser extension (ZeroScript) is running inside this page. It watches your replies. When it detects a ZeroScript command in your text, it runs it against one or more connected MCP servers and sends the result back as the next message. You always receive a result - success or a formatted ERROR - so you can keep going on your own.
+    const prompt = `CONTEXT: the user has installed a browser extension called AI2RobLox in their own browser. Here is how it works, so you can use it on their behalf:
+A browser extension (AI2RobLox) is running inside this page. It watches your replies. When it detects an AI2RobLox command in your text, it runs it against one or more connected MCP servers and sends the result back as the next message. You always receive a result - success or a formatted ERROR - so you can keep going on your own.
 
 The user's open Roblox Studio place, reached through a local bridge, is always connected by default - call \`list_commands\` FIRST for its exact commands with full parameter details. Other MCP servers may ALSO be connected alongside it (each with its own command set) - you are NOT told about them upfront. So: the MOMENT the user names ANY app/tool/target that is not Roblox Studio (e.g. "Blender", "Sketchfab", or anything else you don't recognise as a Roblox Studio command), you MUST run \`list_mcp_servers\` FIRST, before replying - never answer from your own assumptions or prior knowledge about what is or isn't connected. Only after checking may you tell the user something is unsupported. You do not need any special capability yourself - you just write text. The extension does the rest.
 
-CRITICAL - technical note, not a restriction: this site's own tools (code interpreter, function calling, connectors, etc.) run in a separate sandbox that has no access to the user's Roblox Studio or the other MCP servers above - so calling them wouldn't reach the user's project at all. ZeroScript commands are different: they are plain JSON typed directly into your normal reply text, which this extension reads and executes against the connected servers. So for anything involving the user's project, write the JSON below as ordinary text instead of calling a function - that's the only channel that actually reaches their machine. (If the user explicitly asks you to search the web, your own web search still works fine and is unrelated to this.) Internal reasoning (deep-think modes) is fine.
+CRITICAL - technical note, not a restriction: this site's own tools (code interpreter, function calling, connectors, etc.) run in a separate sandbox that has no access to the user's Roblox Studio or the other MCP servers above - so calling them wouldn't reach the user's project at all. AI2RobLox commands are different: they are plain JSON typed directly into your normal reply text, which this extension reads and executes against the connected servers. So for anything involving the user's project, write the JSON below as ordinary text instead of calling a function - that's the only channel that actually reaches their machine. (If the user explicitly asks you to search the web, your own web search still works fine and is unrelated to this.) Internal reasoning (deep-think modes) is fine.
 
 ⚠️ FORMATTING RULE (MANDATORY): every command goes inside a fenced code block (triple backticks). Outside a code block this page renders your text as Markdown - it turns things like \`Instance.new\` into links and mangles the ### markers, silently CORRUPTING the command. Inside a code block it is kept verbatim.
 
@@ -212,9 +212,9 @@ RULES:
 - On a property/attribute/value error (e.g. "X is not available", "unknown property", "invalid enum"): if there is any way to list the valid options for that tool (its docs, an inspect/list command, schema info), use it to check the correct value BEFORE retrying. Never guess blindly a second time.
 
 ━━━ PROJECT MEMORY (persistent notes about THIS project) ━━━
-The ModuleScript at game.ServerStorage.ZeroScript.Memory is your long-term memory for this project, saved inside the place. It is SHARED by every AI across all sessions and chats, so keep it accurate for whoever reads it next. Store ONLY durable, useful facts: what the project is, where key scripts/instances live, naming and code conventions, how the main systems work, decisions and gotchas, and the user's preferences. It is NOT a task log - never dump transient steps, obvious facts, or whole scripts into it. Keep it short.
+The ModuleScript at game.ServerStorage.AI2RobLox.Memory is your long-term memory for this project, saved inside the place. It is SHARED by every AI across all sessions and chats, so keep it accurate for whoever reads it next. Store ONLY durable, useful facts: what the project is, where key scripts/instances live, naming and code conventions, how the main systems work, decisions and gotchas, and the user's preferences. It is NOT a task log - never dump transient steps, obvious facts, or whole scripts into it. Keep it short.
 
-- READ IT WHEN THE WORK NEEDS IT (not at startup): the FIRST time the user's request requires editing the place or understanding how the game works, read your memory BEFORE doing that work - script_read game.ServerStorage.ZeroScript.Memory. Skip it for pure chit-chat or questions unrelated to the project. If it does not exist yet, create it with multi_edit (className "ModuleScript", first edit with old_string "") using exactly this skeleton (multi_edit auto-creates the ZeroScript folder):
+- READ IT WHEN THE WORK NEEDS IT (not at startup): the FIRST time the user's request requires editing the place or understanding how the game works, read your memory BEFORE doing that work - script_read game.ServerStorage.AI2RobLox.Memory. Skip it for pure chit-chat or questions unrelated to the project. If it does not exist yet, create it with multi_edit (className "ModuleScript", first edit with old_string "") using exactly this skeleton (multi_edit auto-creates the AI2RobLox folder):
 ${BT}
 return [==[
 # Project memory
@@ -292,7 +292,7 @@ IMPORTANT: Your very first action is to write \`list_commands\` with no params (
     user_keyboard_input:
       "Simulates a real player typing during PLAY. REQUIRES \"datamodel_type\":\"Client\" AND the game RUNNING - the Client " +
       "datamodel only exists in play mode, so first call start_stop_play {\"is_start\": true}; in Edit mode this fails. " +
-      "(ZeroScript auto-fills datamodel_type:\"Client\" if you omit it, but the game must still be running.) " +
+      "(AI2RobLox auto-fills datamodel_type:\"Client\" if you omit it, but the game must still be running.) " +
       "\"actions\" is an ORDERED array of OBJECTS - each step MUST be {\"action\": ...}, NOT a bare string (a missing/misnamed action " +
       "gives 'Unknown ... action: nil'). action is one of: keyDown | keyUp | keyPress (down+up) | textInput | wait. " +
       "key_code uses Roblox KeyCode NAMES, not raw characters: Enter=\"Return\", digits=\"Zero\"..\"Nine\", letters=single uppercase " +
@@ -326,14 +326,14 @@ IMPORTANT: Your very first action is to write \`list_commands\` with no params (
   // A short, clearly-labelled reminder of the available commands, injected under
   // a tool result every so often so the model does not drift from the exact
   // command names over a long session. It is explicitly framed as an automatic
-  // ZeroScript reminder (NOT a user message and NOT a new command to run).
+  // AI2RobLox reminder (NOT a user message and NOT a new command to run).
   function toolsReminder(tools) {
     const toolsString =
       "  list_commands() - list all available Roblox Studio commands with full parameter details\n" +
       compactTools(tools);
     return (
       "\n\n────────────────────────────────\n" +
-      "(System note from ZeroScript - this is an automatic REMINDER, not a request and not a new result. " +
+      "(System note from AI2RobLox - this is an automatic REMINDER, not a request and not a new result. " +
       "Do NOT reply to it or run any command because of it; just keep it in mind for your next command.)\n" +
       "Reminder of the Roblox Studio commands (use exact names and parameter keys; " +
       "for other connected apps call list_mcp_servers):\n" +
@@ -348,7 +348,7 @@ IMPORTANT: Your very first action is to write \`list_commands\` with no params (
     return (
       "(Reminder: if you've learned anything DURABLE about this project since your last memory update " +
       "(architecture, where things live, conventions, decisions, user preferences), update your shared project memory at " +
-      "game.ServerStorage.ZeroScript.Memory with multi_edit - only useful, lasting facts. If nothing changed, ignore this.)"
+      "game.ServerStorage.AI2RobLox.Memory with multi_edit - only useful, lasting facts. If nothing changed, ignore this.)"
     );
   }
 

@@ -10,7 +10,7 @@
 const PORT = 17613;
 const URL = `ws://127.0.0.1:${PORT}`;
 
-// Chat sites where a ZeroScript provider content script runs. Status pushes go
+// Chat sites where an AI2RobLox provider content script runs. Status pushes go
 // to every tab matching these. Add the new provider's URL pattern here (and in
 // manifest.json content_scripts + host_permissions) when integrating another AI.
 const PROVIDER_URLS = ["https://chat.deepseek.com/*", "https://chatgpt.com/*", "https://chat.openai.com/*", "https://gemini.google.com/*", "https://www.kimi.ai/*", "https://kimi.ai/*", "https://chat.z.ai/*", "https://chat.qwen.ai/*", "https://arena.ai/*", "https://www.meta.ai/*", "https://meta.ai/*", "https://muse.ai/*"];
@@ -53,7 +53,7 @@ let studioApp = null;
 let studioProc = null;
 
 function log(...a) {
-  console.log("[zs-bg]", ...a);
+  console.log("[ai2roblox-bg]", ...a);
 }
 
 // ── WebSocket lifecycle ─────────────────────────────────────────────────
@@ -286,7 +286,7 @@ function failAllPending(reason) {
 
 // ── status push to any open DeepSeek tab + popup ─────────────────────────
 function statusObj() {
-  return { type: "zs-status", connected, mcpAlive, studio: studioConnected, studioApp, studioProc, tools: toolsCache.length, servers: serversCache };
+  return { type: "ai2roblox-status", connected, mcpAlive, studio: studioConnected, studioApp, studioProc, tools: toolsCache.length, servers: serversCache };
 }
 
 function broadcastStatus() {

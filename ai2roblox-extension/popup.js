@@ -56,7 +56,7 @@ document.getElementById("settings").addEventListener("click", () => {
     const active = tabs.find((t) => t.active && t.url && SUPPORTED_HOSTS.some((h) => t.url.includes(h)));
     const anySupported = active || tabs.find((t) => t.url && SUPPORTED_HOSTS.some((h) => t.url.includes(h)));
     if (anySupported) {
-      chrome.tabs.sendMessage(anySupported.id, { type: "zs-open-menu" });
+      chrome.tabs.sendMessage(anySupported.id, { type: "ai2roblox-open-menu" });
       chrome.tabs.update(anySupported.id, { active: true });
     } else {
       chrome.tabs.create({ url: DEFAULT_AI_URL });
@@ -65,7 +65,7 @@ document.getElementById("settings").addEventListener("click", () => {
 });
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && msg.type === "zs-status") render(msg);
+  if (msg && msg.type === "ai2roblox-status") render(msg);
 });
 refresh();
 setInterval(refresh, 2000);

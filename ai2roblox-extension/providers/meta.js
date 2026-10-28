@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/meta.js - the Meta AI (www.meta.ai) provider.
-// Exports the same ZSProvider interface as providers/deepseek.js; the core
+// Exports the same AI2RobLoxProvider interface as providers/deepseek.js; the core
 // (core/main.js) is provider-agnostic. To DISABLE Meta AI support, remove this
 // file from manifest.json (and its URL from background.js PROVIDER_URLS).
 //
@@ -34,11 +34,11 @@
 //        its line spans with "\n" to rebuild the source (same fix class as GLM's
 //        .cm-line / Qwen's Monaco).
 //  - IMPORTANT (viability): Meta AI's guardrail REFUSES to emit command JSON when
-//    the framing is thin; the FULL ZeroScript system prompt (with the "commands
+//    the framing is thin; the FULL AI2RobLox system prompt (with the "commands
 //    are NOT function calls, just TYPE the JSON" reassurance) defuses it and it
 //    complies. Nothing to do in code - just never bootstrap with a stripped prompt.
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -182,7 +182,7 @@ const ZSProvider = (() => {
   // element's line children with "\n".
   function textWithout(root, excludeSel) {
     if (!root) return "";
-    const skip = ".zs-chip, " + S.reasoning + (excludeSel ? ", " + excludeSel : "");
+    const skip = ".ai2roblox-chip, " + S.reasoning + (excludeSel ? ", " + excludeSel : "");
     let t = "";
     const walk = (n) => {
       if (n.nodeType === 3) { t += n.nodeValue; return; }
@@ -294,10 +294,10 @@ const ZSProvider = (() => {
   // with an image staged inline (validated live 2026-07-13). So we treat the
   // textarea as the source of truth for READ/WRITE, and the visible div for
   // geometry (barAnchor) and user-event targeting (installSendHooks).
-  const editorEls = () => [...document.querySelectorAll(S.input)].filter((e) => !e.closest("#zs-root"));
+  const editorEls = () => [...document.querySelectorAll(S.input)].filter((e) => !e.closest("#ai2roblox-root"));
   const isTextareaEditor = (e) => !!e && e.tagName === "TEXTAREA";
   // getEditor() = the ON-SCREEN editor (the Lexical div). The core anchors the
-  // "Agent is working…" cover and the .zs-typing mask to P.getEditor(), so it MUST
+  // "Agent is working…" cover and the .ai2roblox-typing mask to P.getEditor(), so it MUST
   // be the visible node (the hidden mirror textarea has a 0x0 rect and put the
   // cover off-screen). Layout (barAnchor) and event targeting use this too.
   const getEditor = () => {
@@ -322,8 +322,8 @@ const ZSProvider = (() => {
   const isFreshChat = () => chatIsEmpty() && location.pathname === "/" && !!getEditor();
 
   // Meta is a React app that reconciles the composer subtree, so we do NOT insert
-  // #zs-bar into it. barAnchor() returns the rounded composer card; the core
-  // keeps the bar in #zs-root and hugs the card's top edge.
+  // #ai2roblox-bar into it. barAnchor() returns the rounded composer card; the core
+  // keeps the bar in #ai2roblox-root and hugs the card's top edge.
   function barAnchor() {
     const ed = visibleEditor();
     if (!ed) return null;
@@ -338,7 +338,7 @@ const ZSProvider = (() => {
   // ONLY, never the controls row. The rounded composer card has two children -
   // [0] the scroller band that holds the editor, [1] the controls row (attach /
   // Réflexion-Instantané mode toggle / send). Return band [0] (the card child that
-  // contains the editor) so the cover leaves the controls - and the ZS bar above -
+  // contains the editor) so the cover leaves the controls - and the AI2RobLox bar above -
   // uncovered and usable. Falls back to the editor if the structure changes.
   function coverTarget() {
     const card = barAnchor();
@@ -393,7 +393,7 @@ const ZSProvider = (() => {
 
   function streamText(item) {
     const b = bodyOf(item);
-    return b ? textWithout(b, ".zs-chip") : "";
+    return b ? textWithout(b, ".ai2roblox-chip") : "";
   }
   const streamLen = (item) => streamText(item === undefined ? lastAssistant() : item).length;
 
@@ -442,7 +442,7 @@ const ZSProvider = (() => {
     const item = lastAssistant();
     if (!item) return { present: false, reply: "", thinking: "", item: null };
     const b = bodyOf(item);
-    return { present: true, reply: b ? textWithout(b, ".zs-chip").trim() : "", thinking: "", item };
+    return { present: true, reply: b ? textWithout(b, ".ai2roblox-chip").trim() : "", thinking: "", item };
   }
 
   async function waitFor(pred, timeout) {
@@ -474,7 +474,7 @@ const ZSProvider = (() => {
   }
   const fileInputEl = () => {
     for (const inp of document.querySelectorAll('input[type="file"]')) {
-      if (!inp.closest("#zs-root")) return inp;
+      if (!inp.closest("#ai2roblox-root")) return inp;
     }
     return null;
   };
@@ -629,7 +629,7 @@ const ZSProvider = (() => {
   const captchaPresent = () => false;
   function overlayBlocking() {
     for (const d of document.querySelectorAll('[role="dialog"]')) {
-      if (d.closest("#zs-root")) continue;
+      if (d.closest("#ai2roblox-root")) continue;
       const r = d.getBoundingClientRect();
       if (r.width > 40 && r.height > 40 && r.top < innerHeight && r.bottom > 0) return true;
     }
@@ -705,7 +705,7 @@ const ZSProvider = (() => {
   // plain <pre>). Hide every such wrapper carrying a command shape, plus any bare
   // top-level block holding an inline command. React recreates the rendered
   // subtree on stream settle and on the next send, so also mark the assistant body
-  // (its identity survives) with .zs-cmd-mask; the overlay.css rule keeps recreated
+  // (its identity survives) with .ai2roblox-cmd-mask; the overlay.css rule keeps recreated
   // code wrappers hidden.
   const CMD_SHAPE = /"(?:command|tool)"\s*:\s*"|###\s*lua|###mcp_tool###/i;
   function findToolBlockSpot(item /*, chip */) {
@@ -714,10 +714,10 @@ const ZSProvider = (() => {
     let hidAny = null;
     // 1. Code wrappers (JSON viewer or <pre>) carrying a command.
     b.querySelectorAll(S.codeWrap).forEach((cw) => {
-      if (cw.closest(".zs-chip")) return;
+      if (cw.closest(".ai2roblox-chip")) return;
       if (CMD_SHAPE.test(cw.textContent || "")) {
-        cw.classList.add("zs-tool-hide");
-        b.classList.add("zs-cmd-mask");
+        cw.classList.add("ai2roblox-tool-hide");
+        b.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: cw.parentElement, ref: cw };
       }
     });
@@ -728,7 +728,7 @@ const ZSProvider = (() => {
     // descendants and hide the TOPMOST matching block (document order puts
     // parents first; skip anything under an already-hidden ancestor).
     b.querySelectorAll("p, div").forEach((el) => {
-      if (el.closest(".zs-chip, .zs-tool-hide, " + S.codeWrap)) return;
+      if (el.closest(".ai2roblox-chip, .ai2roblox-tool-hide, " + S.codeWrap)) return;
       if (el.querySelector(S.codeWrap)) return;
       const t = (el.textContent || "").trim();
       // A block that STARTS with the command JSON / marker is a command no
@@ -737,7 +737,7 @@ const ZSProvider = (() => {
       const t0 = t.replace(/^json\s*/i, "");
       const startsAsCmd = /^\{\s*"(?:command|tool)"\s*:/.test(t0) || /^###\s*(?:lua|mcp_tool)/i.test(t0);
       if ((startsAsCmd || t.length < 600) && CMD_SHAPE.test(t) && /^[{#]/.test(t0)) {
-        el.classList.add("zs-tool-hide");
+        el.classList.add("ai2roblox-tool-hide");
         hidAny = hidAny || { parent: el.parentElement, ref: el };
       }
     });
@@ -772,8 +772,8 @@ const ZSProvider = (() => {
     // whole text-entry band (blocking clicks that would otherwise focus the editor
     // and let the user type behind it) WITHOUT covering the controls row - the
     // attach button, the Réflexion/Instantané mode toggle, and the send button must
-    // stay visible & usable - nor the ZS bar anchored above. coverMaxH lifts the
-    // core's 200px clamp so a grown (multi-line, up to the zs-typing 140px cap)
+    // stay visible & usable - nor the AI2RobLox bar anchored above. coverMaxH lifts the
+    // core's 200px clamp so a grown (multi-line, up to the ai2roblox-typing 140px cap)
     // band is still fully covered.
     coverTarget,
     coverMaxH: 260,

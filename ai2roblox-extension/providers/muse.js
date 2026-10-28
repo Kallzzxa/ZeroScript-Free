@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // providers/muse.js - the Muse (muse.ai) provider.
-// Exports the same ZSProvider interface as providers/meta.js; the core
+// Exports the same AI2RobLoxProvider interface as providers/meta.js; the core
 // (core/main.js) is provider-agnostic. To DISABLE Muse support, remove this
 // file from manifest.json (and its URL from background.js PROVIDER_URLS).
 //
@@ -40,7 +40,7 @@
 //    native setter ignores readonly, so agent sends still work on a locked
 //    editor). A full command turn still awaits a live test.
 //  - 2026-10-28 (later still): 1.5.9 PASSED the mode gate (mode_ready
-//    ready:true, editorCandidates 1, ZS-SYS sent, gen:true) but the bootstrap
+//    ready:true, editorCandidates 1, AI2RobLox-SYS sent, gen:true) but the bootstrap
 //    fell back to Start: the extension never registered the model's replies
 //    as turns (no tool result ever came back). User pasted a real assistant
 //    bubble: outer <div data-hatch-assistant-message-body="true"> wrapping
@@ -78,7 +78,7 @@
 //    per-line spans without newline text nodes do not collapse multi-line Lua
 //    (same fix class as Meta's <pre> handling and GLM's .cm-line).
 // eslint-disable-next-line no-unused-vars
-const ZSProvider = (() => {
+const AI2RobLoxProvider = (() => {
   "use strict";
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let diag = () => {}; // injected by core via init()
@@ -192,7 +192,7 @@ const ZSProvider = (() => {
     _deepRoots = roots;
     return roots;
   }
-  const _notOurs = (e) => !e.closest("#zs-root");
+  const _notOurs = (e) => !e.closest("#ai2roblox-root");
   function qAllDeep(selector) {
     const top = [...document.querySelectorAll(selector)].filter(_notOurs);
     if (top.length) return top;
@@ -207,7 +207,7 @@ const ZSProvider = (() => {
   // ── Turn list ──────────────────────────────────────────────────────────────
   // Collect candidate turns, then keep only the TOPMOST ones: a candidate
   // contained in another candidate is part of that turn, not a turn itself.
-  // Excludes the extension's own UI (#zs-root) and empty nodes.
+  // Excludes the extension's own UI (#ai2roblox-root) and empty nodes.
   function domTurns() {
     const all = qAllDeep(S.turn).filter((e) => (e.textContent || "").trim().length > 0);
     const top = all.filter((e) => !all.some((o) => o !== e && o.contains(e)));
@@ -274,7 +274,7 @@ const ZSProvider = (() => {
   // multi-line Lua), so rebuild by joining the code element's line children.
   function textWithout(root, excludeSel) {
     if (!root) return "";
-    const skip = ".zs-chip, " + S.reasoning + (excludeSel ? ", " + excludeSel : "");
+    const skip = ".ai2roblox-chip, " + S.reasoning + (excludeSel ? ", " + excludeSel : "");
     let t = "";
     const walk = (n) => {
       if (n.nodeType === 3) { t += n.nodeValue; return; }
@@ -358,7 +358,7 @@ const ZSProvider = (() => {
   // ── Buttons / generation detection ──────────────────────────────────────────
   const sendButton = () => {
     for (const b of qAllDeep(S.sendBtn)) {
-      if (b.closest("#zs-root")) continue;
+      if (b.closest("#ai2roblox-root")) continue;
       if (!isVisible(b)) continue;
       if (b.disabled || b.getAttribute("aria-disabled") === "true") continue;
       return b;
@@ -367,7 +367,7 @@ const ZSProvider = (() => {
   };
   const stopButton = () => {
     for (const b of qAllDeep(S.stopBtn)) {
-      if (b.closest("#zs-root")) continue;
+      if (b.closest("#ai2roblox-root")) continue;
       if (isVisible(b)) return b;
     }
     return null;
@@ -375,7 +375,7 @@ const ZSProvider = (() => {
 
   function streamText(item) {
     const it = item === undefined ? lastAssistant() : item;
-    return it ? textWithout(it, ".zs-chip") : "";
+    return it ? textWithout(it, ".ai2roblox-chip") : "";
   }
   const streamLen = (item) => streamText(item).length;
 
@@ -416,7 +416,7 @@ const ZSProvider = (() => {
   function readAssistant() {
     const item = lastAssistant();
     if (!item) return { present: false, reply: "", thinking: "", item: null };
-    return { present: true, reply: textWithout(item, ".zs-chip").trim(), thinking: "", item };
+    return { present: true, reply: textWithout(item, ".ai2roblox-chip").trim(), thinking: "", item };
   }
 
   async function waitFor(pred, timeout) {
@@ -505,7 +505,7 @@ const ZSProvider = (() => {
       editor = getEditor();
     }
     // editorCandidates is remote-debugging aid: if Start still reports
-    // not-ready, the [zs-diag] mode_ready line shows whether ANY composer
+    // not-ready, the [ai2roblox-diag] mode_ready line shows whether ANY composer
     // candidate exists at all (0 = selector still wrong / shadow DOM).
     diag("mode_ready", { reason, provider: "muse", ready: !!editor, editorCandidates: editorEls().length });
     return { ready: !!editor };
@@ -514,7 +514,7 @@ const ZSProvider = (() => {
   const captchaPresent = () => false;
   function overlayBlocking() {
     for (const d of qAllDeep('[role="dialog"]')) {
-      if (d.closest("#zs-root")) continue;
+      if (d.closest("#ai2roblox-root")) continue;
       const r = d.getBoundingClientRect();
       if (r.width > 40 && r.height > 40 && r.top < innerHeight && r.bottom > 0) return true;
     }
@@ -594,21 +594,21 @@ const ZSProvider = (() => {
     if (!b) return null;
     let hidAny = null;
     b.querySelectorAll(S.codeWrap).forEach((cw) => {
-      if (cw.closest(".zs-chip")) return;
+      if (cw.closest(".ai2roblox-chip")) return;
       if (CMD_SHAPE.test(cw.textContent || "")) {
-        cw.classList.add("zs-tool-hide");
-        b.classList.add("zs-cmd-mask");
+        cw.classList.add("ai2roblox-tool-hide");
+        b.classList.add("ai2roblox-cmd-mask");
         hidAny = hidAny || { parent: cw.parentElement, ref: cw };
       }
     });
     b.querySelectorAll("p, div").forEach((el) => {
-      if (el.closest(".zs-chip, .zs-tool-hide, " + S.codeWrap)) return;
+      if (el.closest(".ai2roblox-chip, .ai2roblox-tool-hide, " + S.codeWrap)) return;
       if (el.querySelector(S.codeWrap)) return;
       const t = (el.textContent || "").trim();
       const t0 = t.replace(/^json\s*/i, "");
       const startsAsCmd = /^\{\s*"(?:command|tool)"\s*:/.test(t0) || /^###\s*(?:lua|mcp_tool)/i.test(t0);
       if ((startsAsCmd || t.length < 600) && CMD_SHAPE.test(t) && /^[{#]/.test(t0)) {
-        el.classList.add("zs-tool-hide");
+        el.classList.add("ai2roblox-tool-hide");
         hidAny = hidAny || { parent: el.parentElement, ref: el };
       }
     });
@@ -630,7 +630,7 @@ const ZSProvider = (() => {
   const PROMPT_EXTRA =
     "You have no function-calling or tool API in this chat that reaches the " +
     "user's computer - do NOT offer to call tools, and do NOT wrap commands " +
-    "in any tool-call markup. Write every ZeroScript command as plain text " +
+    "in any tool-call markup. Write every AI2RobLox command as plain text " +
     "inside a fenced code block, exactly as specified above. " +
     "For generate_mesh and generate_procedural_model, do NOT pass the user's " +
     "short request verbatim as textPrompt or prompt. First expand it into a " +
