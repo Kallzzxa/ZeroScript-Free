@@ -2,6 +2,27 @@
 
 All notable changes to AI2RobLox Free are documented here.
 
+## [1.5.16] - 2026-10-28
+
+### Fixed
+- **Muse: screen_capture is now enabled, like DeepSeek.**
+  DeepSeek showed a screen_capture popup of the Studio viewport,
+  while Muse never even listed the tool: the core blocks
+  screen_capture and turns image results into errors when a
+  provider sets supportsVision false, so Muse advertised 29 tools
+  while DeepSeek advertised 30, and Muse's attachImages was a stub
+  returning false. Now supportsVision is true, attachImages maps
+  the composer's file input via DataTransfer (with a paste
+  fallback, like Gemini), typeAndSend accepts images, and
+  promptExtra carries a screen capture rule: use a capture to
+  verify what is actually visible, describe what it shows, and
+  do not loop captures. Honest limit: the upload path is
+  best-effort until a live capture is confirmed on muse.ai,
+  because the file-input selector comes from the pasted composer
+  markup, not a live capture test - if a capture returns an error
+  that the assistant cannot see images, Muse must fall back to
+  text verification and say so plainly.
+
 ## [1.5.15] - 2026-10-28
 
 ### Fixed

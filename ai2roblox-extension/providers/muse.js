@@ -104,6 +104,20 @@
 //    twice, always stop Play and return to Edit) and a UI quality
 //    rule (UICorner, UIStroke, UIPadding, contrast, working buttons
 //    tested in Play, not just plain labels).
+//  - 2026-10-28 (later still): user sent a DeepSeek screen_capture
+//    popup (Studio viewport with a ghost and a MotorGojek) and said
+//    just update the plugin so Muse can do that too. The reason
+//    Muse did not have it: core blocks screen_capture and turns
+//    image results into errors when supportsVision is false, so
+//    Muse advertised 29 tools while DeepSeek advertised 30, and
+//    Muse's attachImages was a stub returning false. Fix in
+//    1.5.16: supportsVision is now true, attachImages maps the
+//    composer's file input via DataTransfer (paste fallback, like
+//    Gemini), typeAndSend now accepts images, and PROMPT_EXTRA
+//    carries a screen capture rule. The upload path itself is
+//    still best-effort until a live capture is confirmed on
+//    muse.ai, because the file-input selector comes from the
+//    pasted composer markup, not a live capture test.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -468,11 +482,67 @@ const AI2RobLoxProvider = (() => {
   }
 
   // ── Image attachment ────────────────────────────────────────────────────────
-  // NOT supported yet: Muse's attachment UI has not been mapped (see header),
-  // so supportsVision is false and the core never offers screen_capture here.
-  // These stubs keep the interface complete if the core ever calls them.
-  async function attachImages() { return false; }
-  function clearAttachments() {}
+  // 1.5.16: screen_capture is now enabled, like DeepSeek (30 tools, not
+  // 29). The core blocks screen_capture and turns any image result into
+  // an error when supportsVision is false, so Muse never even saw the
+  // tool in list_commands. Muse's model CAN see user-uploaded images,
+  // and the composer the user pasted from Inspect DOES contain a file
+  // input in the same flex row as the textarea, so attachImages now
+  // maps that input, mirroring DeepSeek/Meta: build a File from the
+  // base64 capture, set it on the file input via DataTransfer, dispatch
+  // change, and wait for a preview image to appear. If no file input
+  // is found, fall back to a paste event on the editor, like Gemini.
+  // This path is NOT yet validated live for a real screen_capture
+  // upload on muse.ai (the file-input selector is from the pasted
+  // composer markup, not a live capture test), so attachImages
+  // returns false honestly when no preview appears, and typeAndSend
+  // still sends the text feedback in that case - the user still sees
+  // the capture in the extension's left-hand popup, but the model
+  // may not see it in-chat until the upload path is confirmed live.
+  function fileFromImage(img, i) {
+    const mime = img.mimeType || "image/jpeg";
+    const bin = atob(img.data);
+    const arr = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+    const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
+    return new File([arr], `ai2roblox_${Date.now()}_${i}.${ext}`, { type: mime });
+  }
+  const attachPreview = () => {
+    try {
+      const ed = getEditor();
+      const root = ed && ed.parentElement ? ed.parentElement : document;
+      return !!(root.querySelector && root.querySelector("img"));
+    } catch { return false; }
+  };
+  async function attachImages(images) {
+    if (!images || !images.length) return false;
+    if (attachPreview()) return true;
+    const dt = new DataTransfer();
+    images.forEach((img, i) => { try { dt.items.add(fileFromImage(img, i)); } catch {} });
+    if (!dt.items.length) return false;
+    const editor = getEditor();
+    const fileInputs = qAllDeep('input[type="file"]');
+    const fileInput = fileInputs[0] || null;
+    try {
+      if (fileInput) {
+        fileInput.files = dt.files;
+        fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+      } else if (editor) {
+        editor.focus();
+        editor.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+      } else {
+        return false;
+      }
+    } catch { return false; }
+    const ok = await waitFor(attachPreview, 15000);
+    diag("muse.attach.preview", { ok });
+    return ok;
+  }
+  function clearAttachments() {
+    try {
+      qAllDeep('input[type="file"]').forEach((inp) => { try { inp.value = ""; } catch {} });
+    } catch {}
+  }
 
   // ── Sending ─────────────────────────────────────────────────────────────────
   function setTextareaValue(el, v) {
@@ -500,9 +570,15 @@ const AI2RobLoxProvider = (() => {
     else setEditableValue(el, v);
   }
 
-  async function typeAndSend(text) {
+  async function typeAndSend(text, images) {
     const editor = getEditor();
     if (!editor) throw new Error("Muse input box not found");
+    if (images && images.length) {
+      try {
+        const ok = await attachImages(images);
+        diag("muse.tas.attached", { ok });
+      } catch (e) { diag("muse.tas.attachErr", { msg: String((e && e.message) || e) }); }
+    }
     _rememberSent(text);
     setEditorValue(editor, text);
     const sendReady = () => !!sendButton();
@@ -750,14 +826,31 @@ const AI2RobLoxProvider = (() => {
     "space between elements, and a visible state (speed, status, " +
     "controls) plus working buttons, not just labels. Test the " +
     "buttons with user_mouse_input in Play mode, not just by " +
-    "reading the code.";
+    "reading the code. " +
+    "SCREEN CAPTURE RULE: screen_capture is available on Muse, " +
+    "like on DeepSeek, and it is how you verify what is actually " +
+    "visible in Studio. Use it after creating or changing a model, " +
+    "a UI, or a scene, and whenever text verification alone is " +
+    "ambiguous, for example to check that a model really spawned, " +
+    "that a UI is laid out correctly, or that a character is where " +
+    "you expected. Describe in plain language what the captured " +
+    "image actually shows, and do not claim a visual result you " +
+    "did not see in a capture. One capture per verification is " +
+    "enough; do not loop captures. If a capture returns an error " +
+    "that the assistant cannot see images, do NOT call it again: " +
+    "fall back to text verification with search_game_tree, " +
+    "inspect_instance, and get_console_output, and tell the user " +
+    "plainly that the capture path needs a live check on muse.ai.";
 
   return {
     id: "muse",
     displayName: "Muse",
-    // Vision is OFF until Muse's attachment UI is mapped live (see header):
-    // the core then hides screen_capture instead of offering a broken path.
-    supportsVision: false,
+    // Vision is ON in 1.5.16: the model can see user-uploaded images,
+    // and attachImages now maps the composer's file input, so the
+    // core no longer hides screen_capture (Muse goes from 29 tools
+    // to 30, like DeepSeek). The upload path itself is still
+    // best-effort until a live screen_capture is confirmed on muse.ai.
+    supportsVision: true,
     timings,
     // React reconciles a turn's content subtree on every update, wiping a chip
     // placed inside it. Anchor chips at the turn-element level instead.
@@ -776,7 +869,8 @@ const AI2RobLoxProvider = (() => {
       "failures are diagnosed like DeepSeek: Play mode is stopped " +
       "first, transient fetch errors get one retry. Interactive " +
       "work is self-tested in Play and UIs are made finished, not " +
-      "plain. If turns are not detected, reload the page and retry.",
+      "plain. Screen capture is now enabled like DeepSeek. If turns " +
+      "are not detected, reload the page and retry.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,
