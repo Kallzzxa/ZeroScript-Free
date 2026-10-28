@@ -65,6 +65,21 @@
 //    was verified working: Muse's commands executed and the Workspace
 //    model names matched the prompts Muse sent exactly, so nothing here
 //    was mangled by the extension.
+//  - 2026-10-28 (later still): named-person case (user asked for a
+//    Prabowo object, got a generic-looking one). Same root cause, one
+//    level deeper: generate_mesh is Roblox's own AI text-to-mesh tool,
+//    not this extension's code - it takes ONLY a text prompt, has NO
+//    seed parameter and NO reference-image parameter, and has no
+//    database of real people's faces. A bare name therefore makes the
+//    generator invent a generic person, and Muse's 1.5.11 expansion
+//    invents the missing face details too. Fix in 1.5.13: a named
+//    person / specific character is a CONFIRM-FIRST case - Muse must
+//    show the expanded description, ask the user to correct it or
+//    attach a reference photo, generate only once after confirmation,
+//    and report the result as approximate, never as an exact likeness.
+//    With a photo, prefer generate_procedural_model with
+//    attachedImageUri, the one generation command that accepts an
+//    image, over generate_mesh, which does not.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -644,7 +659,23 @@ const AI2RobLoxProvider = (() => {
     "character, full body, standing upright in A-pose, wearing a worn shirt, " +
     "trousers, boots and a straw hat, detailed skin and fabric texture. " +
     "Adapt the details to what the user actually asked; do not copy that " +
-    "example verbatim when the user asked for something else.";
+    "example verbatim when the user asked for something else. " +
+    "NAMED PERSON / SPECIFIC CHARACTER RULE: if the user names a real " +
+    "person, a famous character, or any specific individual, NEVER send " +
+    "the bare name as the prompt and NEVER invent a face and present it " +
+    "as that person. The generator has no seed and no likeness database, " +
+    "so a bare name always returns a generic invented person. First show " +
+    "the expanded visual description in plain text and ask the user to " +
+    "correct the traits (age, hair, glasses, clothing, pose) or attach a " +
+    "reference photo, and generate only once after they confirm. If they " +
+    "attach a photo, prefer generate_procedural_model with " +
+    "attachedImageUri, which accepts an image, over generate_mesh, which " +
+    "does not. After generation, verify with search_game_tree and report " +
+    "honestly that the result is approximate or generic if it does not " +
+    "match the confirmed traits, and offer ONE retry with corrected " +
+    "traits instead of blindly repeating the same prompt, because " +
+    "repeating a prompt with no seed gives a different random result " +
+    "each time.";
 
   return {
     id: "muse",
@@ -665,8 +696,9 @@ const AI2RobLoxProvider = (() => {
     unstableWarning:
       "Muse support is experimental: turn detection is now validated live " +
       "on muse.ai, and mesh prompts are expanded to detailed prompts " +
-      "before generation. If turns are not detected, reload " +
-      "the page and retry.",
+      "before generation. Named people need a confirmed description or " +
+      "a reference photo, and likeness is never guaranteed. If turns " +
+      "are not detected, reload the page and retry.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns
     allItems, isUserItem, isAssistantItem, itemText, classifyText,

@@ -2,6 +2,26 @@
 
 All notable changes to AI2RobLox Free are documented here.
 
+## [1.5.13] - 2026-10-28
+
+### Fixed
+- **Muse: named people no longer generate from a bare name.**
+  Asked for a Prabowo object, Muse sent (or expanded from) just the
+  name and Roblox's generator returned a generic invented person.
+  That is not a parsing bug: generate_mesh is Roblox's own AI
+  text-to-mesh tool, it takes only a text prompt, has no seed
+  parameter, no reference-image parameter, and no database of real
+  people's faces - so a bare name can only produce a guess.
+  Muse's promptExtra now treats a named person / specific character
+  as confirm-first: show the expanded visual description, ask the
+  user to correct the traits or attach a reference photo, generate
+  only once after confirmation, and report the result honestly as
+  approximate if it does not match. With a photo, prefer
+  generate_procedural_model with attachedImageUri (the generation
+  command that accepts an image) over generate_mesh (which does
+  not). Repeating the same prompt is not a fix, because with no
+  seed every run is a different random result.
+
 ## [1.5.12] - 2026-10-28
 
 ### Changed - BREAKING REBRAND
