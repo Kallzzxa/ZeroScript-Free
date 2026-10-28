@@ -2,6 +2,25 @@
 
 All notable changes to AI2RobLox Free are documented here.
 
+## [1.5.14] - 2026-10-28
+
+### Fixed
+- **Muse: generate failures are now diagnosed like DeepSeek.**
+  DeepSeek screenshots showed two behaviours Muse did not do on its
+  own: on a generate error it first ran get_studio_state, found Play
+  mode, stopped Play with start_stop_play, then retried in Edit
+  mode; on a generate_mesh "Failed to fetch image" error it said
+  the fetch was usually transient and retried once, considering a
+  procedural fallback. The extension already renders each command
+  and its result as a card in the chat, the same as on DeepSeek, so
+  the fix is in Muse's promptExtra, not in parsing: Muse must now
+  check the studio mode first, stop Play before an Edit-mode
+  generate, retry a transient fetch error once only, check
+  search_game_tree before any re-generate to avoid duplicates, then
+  offer generate_procedural_model as a fallback or ask the user -
+  never an endless retry loop, and never a claimed success after a
+  failure. The diagnosis is explained in the user's language.
+
 ## [1.5.13] - 2026-10-28
 
 ### Fixed

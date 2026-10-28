@@ -80,6 +80,18 @@
 //    With a photo, prefer generate_procedural_model with
 //    attachedImageUri, the one generation command that accepts an
 //    image, over generate_mesh, which does not.
+//  - 2026-10-28 (later still): user sent DeepSeek screenshots showing
+//    a generate diagnosis Muse did not do on its own: on an error,
+//    DeepSeek first ran get_studio_state, found Play mode, stopped
+//    Play with start_stop_play, then retried in Edit mode; on a
+//    generate_mesh "Failed to fetch image" error it said the fetch
+//    was usually transient and retried once, considering a
+//    procedural fallback. The extension already renders each command
+//    and result as a card in the chat, the same as on DeepSeek, so
+//    the missing piece was model behaviour, not parsing. Fix in
+//    1.5.14: PROMPT_EXTRA now carries that diagnosis loop for Muse
+//    (check mode, stop Play, retry once, fallback or ask - never an
+//    endless retry), explained in the user's language.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -675,7 +687,32 @@ const AI2RobLoxProvider = (() => {
     "match the confirmed traits, and offer ONE retry with corrected " +
     "traits instead of blindly repeating the same prompt, because " +
     "repeating a prompt with no seed gives a different random result " +
-    "each time.";
+    "each time. " +
+    "GENERATE DIAGNOSIS RULE (mirrors DeepSeek behaviour seen live " +
+    "2026-10-28): when a generate_mesh, generate_procedural_model, or " +
+    "Edit-mode execute_luau call fails, do NOT just retry it blindly " +
+    "and do NOT claim success. First diagnose, in this order. " +
+    "1) Run get_studio_state and report the mode in plain language. " +
+    "If Studio is in Play mode, generate_mesh and Edit-mode calls " +
+    "cannot run there: run start_stop_play with is_start false, wait " +
+    "for Game Stopped, then retry the generate ONCE in Edit mode. " +
+    "Never attempt a generate in Play mode. " +
+    "2) Read the error's last segment and classify it. If it says " +
+    "Failed to fetch image, fetch failed, or a similar network / " +
+    "reference-image error, say plainly in the user's language that " +
+    "it is usually transient, then retry the SAME generate ONCE only. " +
+    "If that second attempt also fails, stop looping: check " +
+    "search_game_tree first so you do not create a duplicate, then " +
+    "offer generate_procedural_model as a fallback, or ask the user " +
+    "what to do next. " +
+    "3) For any other error, explain what the error actually says, " +
+    "what you already checked, and what is still unknown, in the " +
+    "user's language. One retry per generate at most, then a " +
+    "fallback or a question, never an endless retry loop. " +
+    "Tool cards: the extension already turns each command and its " +
+    "result into a card in the chat, the same as on DeepSeek, so " +
+    "keep your narration short and let the card carry the command " +
+    "name and result; do not paste the raw command again in prose.";
 
   return {
     id: "muse",
@@ -697,7 +734,9 @@ const AI2RobLoxProvider = (() => {
       "Muse support is experimental: turn detection is now validated live " +
       "on muse.ai, and mesh prompts are expanded to detailed prompts " +
       "before generation. Named people need a confirmed description or " +
-      "a reference photo, and likeness is never guaranteed. If turns " +
+      "a reference photo, and likeness is never guaranteed. Generate " +
+      "failures are diagnosed like DeepSeek: Play mode is stopped " +
+      "first, transient fetch errors get one retry. If turns " +
       "are not detected, reload the page and retry.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns
