@@ -2,6 +2,21 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.6] - 2026-10-28
+
+### Added
+- **Muse support (experimental).** A new `providers/muse.js` adapter turns
+  muse.ai into a ZeroScript provider, wired into manifest.json (host
+  permission + content script), background.js provider URLs, and the popup's
+  supported-host list. It implements the full ZSProvider interface with
+  layered fallback selectors for the composer, Send/Stop buttons, and
+  message turns, plus Muse-specific system-prompt notes. Vision
+  (screen_capture) is off until Muse's attachment UI is mapped.
+  Not yet validated live on muse.ai: the inspection browser refused the
+  whole muse.ai domain (enterprise policy block), so the selectors are
+  fallbacks, not captured markup. Live test required before calling this
+  provider stable - see the header of providers/muse.js.
+
 ## [1.5.5] - 2026-09-10
 
 ### Fixed
