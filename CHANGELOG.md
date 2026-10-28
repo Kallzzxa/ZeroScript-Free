@@ -2,6 +2,21 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.9] - 2026-10-28
+
+### Fixed
+- **Muse: Start no longer fails with "Muse mode not ready" - the real cause.**
+  The mode_ready diagnostic showed editorCandidates 0 while the console
+  counted 2 textareas. The core locks the composer with readonly BEFORE
+  the readiness gate (setInputLock(true) runs before
+  ensureComposerReady("startup")), and the editor selector excluded
+  readonly textareas - so the locked composer vanished from getEditor()
+  and every Start failed identically. The selector no longer excludes
+  readonly textareas (Meta's lock uses the same readonly trick, and its
+  comment notes the native setter ignores readonly, so agent sends still
+  work on a locked editor). A full command turn on Muse still awaits a
+  live test.
+
 ## [1.5.8] - 2026-10-28
 
 ### Fixed

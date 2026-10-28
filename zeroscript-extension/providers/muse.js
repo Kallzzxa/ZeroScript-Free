@@ -29,6 +29,16 @@
 //    document: the chat UI must render inside a shadow root or an iframe.
 //    Fix in 1.5.8: qAllDeep() searches shadow roots and same-origin iframe
 //    documents whenever the top document has no match.
+//  - 2026-10-28 (later still): mode_ready diag proved the real cause, and it
+//    was NOT the selector shape at all: the core locks the composer with
+//    readonly BEFORE the readiness gate (setInputLock(true) at main.js:1831,
+//    ensureComposerReady at :1843), and the editor selector excluded readonly
+//    textareas - so the locked composer vanished from getEditor() and every
+//    Start failed identically (diag: editorCandidates 0) while the console
+//    still counted 2 textareas. Fix in 1.5.9: no :not([readonly]) exclusion
+//    (Meta's lock does the same readonly trick, and its comment notes the
+//    native setter ignores readonly, so agent sends still work on a locked
+//    editor). A full command turn still awaits a live test.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -61,13 +71,15 @@ const ZSProvider = (() => {
   // Candidate selectors, tried in order. Nothing here is Muse-confirmed markup
   // (see header) - each list degrades gracefully to the next candidate.
   const S = {
-    // Composer candidates (visible one wins). contenteditable is matched
-    // WITHOUT a value on purpose: besides "true", modern chat composers use
-    // "plaintext-only" or an empty attribute, all of which the old
-    // [contenteditable="true"] selector missed (that miss is exactly what made
-    // Start fail with "Muse mode not ready" on 2026-10-28: the bar mounted,
-    // but getEditor() was null, so ensureComposerReady reported not-ready).
-    editor: 'textarea:not([readonly]), [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
+    // Composer candidates (visible one wins). NOTE: do NOT exclude readonly
+    // textareas (no :not([readonly])). The core LOCKS the composer with
+    // readonly BEFORE the readiness gate (main.js: setInputLock(true) runs
+    // before ensureComposerReady("startup")), and Meta's own lock does the
+    // same - so excluding readonly made the locked composer invisible to
+    // getEditor() and every Start failed with "mode not ready" while the
+    // console still counted the textarea. The native setter ignores readonly
+    // (Meta's own comment), so typeAndSend still writes to a locked editor.
+    editor: 'textarea, [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
     // Send / stop buttons (visible, enabled one wins).
     sendBtn: 'button[aria-label*="send" i], button[type="submit"]',
     stopBtn: 'button[aria-label*="stop" i]',
