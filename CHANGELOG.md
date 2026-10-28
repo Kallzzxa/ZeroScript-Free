@@ -2,6 +2,18 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.10] - 2026-10-28
+
+### Fixed
+- **Muse: assistant replies are now detected as turns.**
+  1.5.9 passed the mode gate and sent the system prompt, but the bootstrap
+  fell back to Start because the extension never registered the model's
+  replies: the generic turn selectors matched nothing on muse.ai. The user
+  pasted a real assistant bubble, whose outer wrapper carries
+  `data-hatch-assistant-message-body="true"` - turn candidates now start
+  with the hatch message-body markers, and assistant classification checks
+  them first. A full command turn on Muse still awaits a live test.
+
 ## [1.5.9] - 2026-10-28
 
 ### Fixed

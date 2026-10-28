@@ -39,6 +39,18 @@
 //    (Meta's lock does the same readonly trick, and its comment notes the
 //    native setter ignores readonly, so agent sends still work on a locked
 //    editor). A full command turn still awaits a live test.
+//  - 2026-10-28 (later still): 1.5.9 PASSED the mode gate (mode_ready
+//    ready:true, editorCandidates 1, ZS-SYS sent, gen:true) but the bootstrap
+//    fell back to Start: the extension never registered the model's replies
+//    as turns (no tool result ever came back). User pasted a real assistant
+//    bubble: outer <div data-hatch-assistant-message-body="true"> wrapping
+//    .hatch-chat-groupable-bubble > .prose (data-hatch-markdown-streaming
+//    false when settled - a possible future generating signal, not used yet).
+//    Fix in 1.5.10: turn candidates start with the hatch message-body
+//    markers; assistant classification checks them first. Watch items: the
+//    user-side marker is inferred symmetric (unconfirmed); fenced code blocks
+//    render as <pre> (handled) unless Muse uses a custom code viewer, which
+//    would collapse multi-line Lua in textWithout.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -84,7 +96,14 @@ const ZSProvider = (() => {
     sendBtn: 'button[aria-label*="send" i], button[type="submit"]',
     stopBtn: 'button[aria-label*="stop" i]',
     // Turn candidates (topmost match wins; nested matches are dropped).
-    turn: '[data-testid*="message"], [data-message-author-role], [data-role*="message"], article, [class*="message-bubble"]',
+    // The assistant marker is CONFIRMED from live markup pasted by the user
+    // (2026-10-28): an assistant reply is wrapped in
+    // <div data-hatch-assistant-message-body="true"> containing a
+    // .hatch-chat-groupable-bubble with the prose inside. The user-side
+    // marker below is INFERRED symmetric (data-hatch-user-message-body) -
+    // not yet confirmed from a user bubble - so the generic fallbacks after
+    // it still matter for user turns.
+    turn: '[data-hatch-assistant-message-body], [data-hatch-user-message-body], [data-testid*="message"], [data-message-author-role], [data-role*="message"], article, [class*="message-bubble"]',
     // Assistant markers inside a turn's own testid/class.
     asstMark: /assistant|ai-response|ai-message|model-response|bot-response/i,
     userMark: /user-message|user-response|human-message/i,
@@ -190,6 +209,11 @@ const ZSProvider = (() => {
   }
   function isAssistantItem(item) {
     if (!item) return false;
+    // Confirmed live markers first: the hatch message-body attributes are
+    // unambiguous (assistant body vs user body), so they outrank every
+    // heuristic below.
+    if (item.matches("[data-hatch-assistant-message-body]")) return true;
+    if (item.matches("[data-hatch-user-message-body]")) return false;
     const { t, role } = turnMarkers(item);
     if (role === "assistant" || role === "model" || role === "ai") return true;
     if (role === "user" || role === "human") return false;
