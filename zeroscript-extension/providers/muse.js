@@ -20,6 +20,15 @@
 //    Fix in 1.5.7: contenteditable matched without a value (covers "true",
 //    "plaintext-only", empty) + a retry loop in ensureComposerReady for late
 //    hydration. A full command turn has still not succeeded.
+//  - 2026-10-28 (later): user pasted the REAL composer markup from Inspect.
+//    The composer IS a plain <textarea> (aria-label="Message",
+//    placeholder="Message", data-hatch-composer-prehydration-input, inside a
+//    relative flex row with a file input and a placeholder overlay span) -
+//    which BOTH the 1.5.6 and 1.5.7 selectors should have matched. Since
+//    getEditor() still returned null, that textarea is NOT in the top-level
+//    document: the chat UI must render inside a shadow root or an iframe.
+//    Fix in 1.5.8: qAllDeep() searches shadow roots and same-origin iframe
+//    documents whenever the top document has no match.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -105,14 +114,57 @@ const ZSProvider = (() => {
     RESPONSE_TIMEOUT_MS: 300000,
   };
 
+  // ── Deep query (shadow DOM + iframes) ─────────────────────────────────────
+  // The composer the user pasted from Inspect is a plain <textarea> that the
+  // top-level document query could NOT see, so the chat UI must live inside a
+  // shadow root or an iframe. qAllDeep() therefore tries the top document
+  // first (fast path, same as before) and only falls back to a recursive
+  // scan of shadow roots and same-origin iframe documents when the top
+  // document has no match at all. The discovered roots are cached (the set of
+  // shadow hosts / frames rarely changes) and rescanned only after a deep
+  // query comes up empty, so a late-mounted chat tree is still picked up.
+  let _deepRoots = null;
+  function deepRoots() {
+    if (_deepRoots) return _deepRoots;
+    const roots = [];
+    const seen = new Set([document]);
+    const walk = (root) => {
+      for (const el of root.querySelectorAll("*")) {
+        if (el.shadowRoot && !seen.has(el.shadowRoot)) {
+          seen.add(el.shadowRoot);
+          roots.push(el.shadowRoot);
+          walk(el.shadowRoot);
+        }
+      }
+      for (const fr of root.querySelectorAll("iframe")) {
+        try {
+          const d = fr.contentDocument;
+          if (d && !seen.has(d)) { seen.add(d); roots.push(d); walk(d); }
+        } catch {}
+      }
+    };
+    walk(document);
+    _deepRoots = roots;
+    return roots;
+  }
+  const _notOurs = (e) => !e.closest("#zs-root");
+  function qAllDeep(selector) {
+    const top = [...document.querySelectorAll(selector)].filter(_notOurs);
+    if (top.length) return top;
+    const out = [];
+    for (const r of deepRoots()) {
+      try { for (const el of r.querySelectorAll(selector)) if (_notOurs(el)) out.push(el); } catch {}
+    }
+    if (!out.length) _deepRoots = null; // rescan next time (late mount)
+    return out;
+  }
+
   // ── Turn list ──────────────────────────────────────────────────────────────
   // Collect candidate turns, then keep only the TOPMOST ones: a candidate
   // contained in another candidate is part of that turn, not a turn itself.
   // Excludes the extension's own UI (#zs-root) and empty nodes.
   function domTurns() {
-    const all = [...document.querySelectorAll(S.turn)].filter(
-      (e) => !e.closest("#zs-root") && (e.textContent || "").trim().length > 0
-    );
+    const all = qAllDeep(S.turn).filter((e) => (e.textContent || "").trim().length > 0);
     const top = all.filter((e) => !all.some((o) => o !== e && o.contains(e)));
     // A turn list must read in document order; querySelectorAll already does.
     return top;
@@ -207,8 +259,7 @@ const ZSProvider = (() => {
 
   // ── Composer ────────────────────────────────────────────────────────────────
   const isVisible = (e) => !!e && e.offsetParent !== null && e.getClientRects().length > 0;
-  const editorEls = () =>
-    [...document.querySelectorAll(S.editor)].filter((e) => !e.closest("#zs-root"));
+  const editorEls = () => qAllDeep(S.editor);
   // getEditor() = the ON-SCREEN editor (visible candidate wins; first match
   // otherwise). The core anchors covers/bars to this node, so it must be the
   // visible one, never a hidden mirror.
@@ -256,7 +307,7 @@ const ZSProvider = (() => {
 
   // ── Buttons / generation detection ──────────────────────────────────────────
   const sendButton = () => {
-    for (const b of document.querySelectorAll(S.sendBtn)) {
+    for (const b of qAllDeep(S.sendBtn)) {
       if (b.closest("#zs-root")) continue;
       if (!isVisible(b)) continue;
       if (b.disabled || b.getAttribute("aria-disabled") === "true") continue;
@@ -265,7 +316,7 @@ const ZSProvider = (() => {
     return null;
   };
   const stopButton = () => {
-    for (const b of document.querySelectorAll(S.stopBtn)) {
+    for (const b of qAllDeep(S.stopBtn)) {
       if (b.closest("#zs-root")) continue;
       if (isVisible(b)) return b;
     }
@@ -412,7 +463,7 @@ const ZSProvider = (() => {
   const modeWarning = () => "";
   const captchaPresent = () => false;
   function overlayBlocking() {
-    for (const d of document.querySelectorAll('[role="dialog"]')) {
+    for (const d of qAllDeep('[role="dialog"]')) {
       if (d.closest("#zs-root")) continue;
       const r = d.getBoundingClientRect();
       if (r.width > 40 && r.height > 40 && r.top < innerHeight && r.bottom > 0) return true;
@@ -424,7 +475,7 @@ const ZSProvider = (() => {
   function scanError() {
     try {
       const turns = domTurns();
-      for (const el of document.querySelectorAll(S.errorSurfaces)) {
+      for (const el of qAllDeep(S.errorSurfaces)) {
         if (el.offsetParent === null) continue;
         if (turns.some((t) => t.contains(el))) continue; // inside a chat turn => model content
         const t = (el.innerText || "").trim();

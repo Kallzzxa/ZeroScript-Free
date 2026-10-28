@@ -2,6 +2,20 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.8] - 2026-10-28
+
+### Fixed
+- **Muse: the composer is found even when it lives outside the top document.**
+  The user pasted the real composer markup from Inspect: it IS a plain
+  `<textarea>` (aria-label "Message", data-hatch-composer-prehydration-input)
+  that both the 1.5.6 and 1.5.7 selectors should have matched - yet
+  getEditor() still returned null, so the chat UI must render inside a
+  shadow root or an iframe. All provider queries (composer, Send/Stop
+  buttons, turns, error surfaces, dialogs) now fall back to a recursive
+  search of shadow roots and same-origin iframe documents when the top
+  document has no match. A full command turn on Muse still awaits a live
+  test.
+
 ## [1.5.7] - 2026-10-28
 
 ### Fixed
