@@ -51,6 +51,20 @@
 //    user-side marker is inferred symmetric (unconfirmed); fenced code blocks
 //    render as <pre> (handled) unless Muse uses a custom code viewer, which
 //    would collapse multi-line Lua in textWithout.
+//  - 2026-10-28 (later still): 1.5.10 DID run full command turns on Muse
+//    and generated Studio models - so turn detection is no longer the
+//    blocker. The new failure is prompt quality, not parsing: asked for a
+//    "very realistic farmer character", Muse passed that 4-word request
+//    verbatim as generate_mesh textPrompt and got an unclear model, while
+//    DeepSeek's session expanded the same idea into a detailed prompt
+//    (full body, A-pose, worn clothes, straw hat - visible in the long
+//    Workspace model name it produced) and got a recognisable farmer.
+//    Fix in 1.5.11: Muse's promptExtra now REQUIRES expanding short mesh /
+//    procedural prompts into detailed visual prompts before calling
+//    generate_mesh / generate_procedural_model. Command parsing itself
+//    was verified working: Muse's commands executed and the Workspace
+//    model names matched the prompts Muse sent exactly, so nothing here
+//    was mangled by the extension.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -604,11 +618,33 @@ const ZSProvider = (() => {
   // Muse's web chat has no function-calling channel to the user's machine, so
   // Studio work must go through plain-text commands (same core rule, restated
   // for a model that may otherwise offer its own tools).
+  //
+  // Mesh-prompt expansion (1.5.11, verified live 2026-10-28): Muse used to
+  // pass a user's short request verbatim as generate_mesh textPrompt
+  // ("very realistic farmer character") and the generator returned an
+  // unclear model, while DeepSeek expanded the same idea into a detailed
+  // prompt (full body, A-pose, worn clothes, straw hat) and got a
+  // recognisable farmer. The extension did NOT mangle Muse's command -
+  // the Workspace model name matched Muse's prompt exactly - so the fix
+  // belongs here, in what Muse is told to write, not in parsing.
   const PROMPT_EXTRA =
     "You have no function-calling or tool API in this chat that reaches the " +
     "user's computer - do NOT offer to call tools, and do NOT wrap commands " +
     "in any tool-call markup. Write every ZeroScript command as plain text " +
-    "inside a fenced code block, exactly as specified above.";
+    "inside a fenced code block, exactly as specified above. " +
+    "For generate_mesh and generate_procedural_model, do NOT pass the user's " +
+    "short request verbatim as textPrompt or prompt. First expand it into a " +
+    "detailed, specific visual prompt: subject, full body or part, pose " +
+    "(for a character: standing upright, A-pose, facing forward), clothing " +
+    "and props, materials and texture, proportions, and style (realistic, " +
+    "detailed). Keep the user's subject and style words, and add only " +
+    "concrete visual details that make the subject recognisable. A 3-5 word " +
+    "prompt is NOT enough and produces an unclear model. For example, " +
+    "expand a farmer request into something like: a realistic 3D farmer " +
+    "character, full body, standing upright in A-pose, wearing a worn shirt, " +
+    "trousers, boots and a straw hat, detailed skin and fabric texture. " +
+    "Adapt the details to what the user actually asked; do not copy that " +
+    "example verbatim when the user asked for something else.";
 
   return {
     id: "muse",
@@ -627,8 +663,9 @@ const ZSProvider = (() => {
     reliableCounts: false,
     // Shown in the bar while this provider is active: honest about the state.
     unstableWarning:
-      "Muse support is experimental: its selectors are fallbacks and have not " +
-      "been validated live on muse.ai yet. If turns are not detected, reload " +
+      "Muse support is experimental: turn detection is now validated live " +
+      "on muse.ai, and mesh prompts are expanded to detailed prompts " +
+      "before generation. If turns are not detected, reload " +
       "the page and retry.",
     init({ diag: d } = {}) { if (d) diag = d; },
     // turns

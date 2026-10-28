@@ -2,6 +2,22 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.11] - 2026-10-28
+
+### Fixed
+- **Muse: mesh prompts are expanded before generation, so a farmer looks like a farmer.**
+  Asked for a "very realistic farmer character", Muse passed that 4-word
+  request verbatim as the generate_mesh textPrompt and got an unclear
+  model, while DeepSeek expanded the same idea into a detailed prompt
+  (full body, A-pose, worn clothes, straw hat) and got a recognisable
+  farmer. The extension did not mangle Muse's command - the Workspace
+  model name matched Muse's prompt exactly - so the fix is in Muse's
+  promptExtra: for generate_mesh and generate_procedural_model, Muse must
+  now expand a short request into a detailed visual prompt (subject,
+  full body / pose, clothing and props, materials, style) before calling
+  the generator. Muse's unstable warning is updated too: turn detection
+  is now validated live on muse.ai, it is no longer "not validated yet".
+
 ## [1.5.10] - 2026-10-28
 
 ### Fixed
