@@ -2,6 +2,18 @@
 
 All notable changes to ZeroScript Free are documented here.
 
+## [1.5.7] - 2026-10-28
+
+### Fixed
+- **Muse: Start no longer fails with "Muse mode not ready" on a fresh chat.**
+  The bar mounted on muse.ai/thread/new, but Start failed at the core's
+  composer-readiness gate because the composer selector required
+  `[contenteditable="true"]` and the page's editor uses another
+  contenteditable spelling. The selector now matches contenteditable
+  without a value (covers "true", "plaintext-only", and empty), and
+  ensureComposerReady retries briefly for late hydration. A full command
+  turn on Muse still awaits a live test.
+
 ## [1.5.6] - 2026-10-28
 
 ### Added

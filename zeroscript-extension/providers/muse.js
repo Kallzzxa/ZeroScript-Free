@@ -12,14 +12,14 @@
 // the shapes modern React chat apps normally use (real <textarea> first, then
 // contenteditable / role=textbox editors; aria-labelled Send/Stop buttons;
 // data-testid / data-role message markers, then alignment). It is NOT yet
-// validated live on muse.ai. Before calling this provider stable:
-//   1. Load the extension unpacked, open muse.ai, start a new chat.
-//   2. Confirm the ZeroScript bar appears above the composer and Start works.
-//   3. Send one command turn (list_commands) and confirm the reply is read,
-//      the command runs, and the result comes back.
-// If any step fails, the failing selector is in S below - tighten it to the
-// live markup and note the date + markup here, like the other providers do.
-// Until then the core shows the "experimental" warning (unstableWarning).
+// validated live on muse.ai. Live-test history (user's own browser):
+//  - 2026-10-28: bar v1.5.6 DID mount on muse.ai/thread/new, but Start failed
+//    with the core's "Muse mode not ready" banner, because getEditor() was
+//    null at Start time: the composer selector required
+//    [contenteditable="true"] and missed other contenteditable spellings.
+//    Fix in 1.5.7: contenteditable matched without a value (covers "true",
+//    "plaintext-only", empty) + a retry loop in ensureComposerReady for late
+//    hydration. A full command turn has still not succeeded.
 //
 // Muse DOM notes (assumed, NOT validated live):
 //  - React app. The composer is expected to be a <textarea> or a
@@ -52,8 +52,13 @@ const ZSProvider = (() => {
   // Candidate selectors, tried in order. Nothing here is Muse-confirmed markup
   // (see header) - each list degrades gracefully to the next candidate.
   const S = {
-    // Composer candidates (visible one wins).
-    editor: 'textarea:not([readonly]), [contenteditable="true"], [role="textbox"]',
+    // Composer candidates (visible one wins). contenteditable is matched
+    // WITHOUT a value on purpose: besides "true", modern chat composers use
+    // "plaintext-only" or an empty attribute, all of which the old
+    // [contenteditable="true"] selector missed (that miss is exactly what made
+    // Start fail with "Muse mode not ready" on 2026-10-28: the bar mounted,
+    // but getEditor() was null, so ensureComposerReady reported not-ready).
+    editor: 'textarea:not([readonly]), [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
     // Send / stop buttons (visible, enabled one wins).
     sendBtn: 'button[aria-label*="send" i], button[type="submit"]',
     stopBtn: 'button[aria-label*="stop" i]',
@@ -388,8 +393,21 @@ const ZSProvider = (() => {
   // ── Composer readiness ──────────────────────────────────────────────────────
   function enforceComposer() { if (_locked) applyLock(); return { ready: true }; }
   async function ensureComposerReady(reason) {
-    diag("mode_ready", { reason, provider: "muse", ready: !!getEditor() });
-    return { ready: !!getEditor() };
+    // The core gates session start on .ready (main.js: the "mode not ready"
+    // banner). Retry briefly: on a fresh /thread/new page the composer may
+    // still be hydrating when Start is clicked, and a single instant check
+    // would report not-ready even though the editor appears a moment later
+    // (same retry shape as DeepSeek's ensureComposerReady).
+    let editor = getEditor();
+    for (let i = 0; i < 12 && !editor; i++) {
+      await sleep(150);
+      editor = getEditor();
+    }
+    // editorCandidates is remote-debugging aid: if Start still reports
+    // not-ready, the [zs-diag] mode_ready line shows whether ANY composer
+    // candidate exists at all (0 = selector still wrong / shadow DOM).
+    diag("mode_ready", { reason, provider: "muse", ready: !!editor, editorCandidates: editorEls().length });
+    return { ready: !!editor };
   }
   const modeWarning = () => "";
   const captchaPresent = () => false;
